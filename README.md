@@ -8,7 +8,7 @@ Visualization is pre-calculated (not a stream of audio, rather a file). This may
 
 ## Input
 
-First you'll need to set the dimensions (1D/2D, size). After that you'll need to provide an .wav file.
+First you'll need to set the dimensions (width and length). After that you'll need to provide an .wav file.
 
 ## Artists
 
