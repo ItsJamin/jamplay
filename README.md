@@ -1,24 +1,32 @@
-# JamVis
-An interface for calculating good-looking audio-visualizations.
-One of a two-part-project, the other one (JamMan) being the actual manager between audiosource, JamVis and hardware components such as LEDs and/or speakers.
+# JamMan
 
-Visualization is pre-calculated (not a stream of audio, rather a file). This may not be as flexible but it allows for more in-depth analysis of music data.
+JamMan is a Music Manager for your home network which you can acces from any device in this network. The main function of JamMan is the managing role between JamVis and JamPlay. JamPlay can be used to play music, while JamVis allows the music to be visualised with LEDs or another medium.
 
-# The Flow
+The goal is to have a RaspberryPi as a single device to use as your Music Manager.
 
-## Input
+# Project Structure and Flow
 
-First you'll need to set the dimensions (width and length). After that you'll need to provide an .wav file.
+## Structure
+```
+jam-man
+- front-end
+- back-end
+- connecting component to jam-play
+- download with link (using yt-dlp)
+- database with songs and meta-data
+jam-play
+- play the music (onto audio device)
+- interact with interface to jam-vis to update visual device (if wanted)
+jam-vis
+- analyze the music
+- give back vizualization for given time in interface
+```
 
-## Artists
-
-Choose on what features and in which ways the music should be visualized (choose an artist).
-
-## Mapper
-
-Mapper take the results from artists and map them onto the given dimensions.
-
-## Output
-
-A frame_generator (iterator over frames) where each frame is an pixel-array with colors in the wanted dimensions. Frames are one sample_rate long.
+## Flow
+1. Open Front-End (Website)
+- Display available songs via jam-man or download songs via jam-get
+2. Choose a song
+- jam-man takes choice, gives it to jam-play
+- jam-play then gives it jam-vis for analyzing
+- while playing the song jam-play communicates with jam-vis to get visualization-data
 
