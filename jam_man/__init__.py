@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 import redis
 
-app = Flask(__name__, template_folder='../frontend/templates')
+app = Flask(__name__, template_folder='../frontend/templates', static_folder="../frontend/static")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../resources/database.db'
 
 # Initialisierung von Modulen

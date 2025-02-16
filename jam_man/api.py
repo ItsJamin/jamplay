@@ -1,11 +1,11 @@
 from flask import request, jsonify, render_template
 from jam_man import app, db
 from jam_man.db import Song
-from jam_man.queue import add_to_queue, get_next_song
+from jam_man.queue import add_to_queue, get_next_song, get_queue
 import yt_dlp
 import os
 
-RESOURCES_PATH = "../resources/songs/"
+RESOURCES_PATH = "./resources/songs/"
 
 @app.route('/')
 def index():
@@ -14,7 +14,11 @@ def index():
 @app.route('/songs', methods=['GET'])
 def get_songs():
     songs = Song.query.all()
-    return jsonify([{ 'id': s.id, 'title': s.title, 'artist': s.artist } for s in songs])
+    return jsonify([{ 'id': s.id, 'title': s.title, 'artist': s.artist, 'album': s.album, 'year': s.year } for s in songs])
+
+@app.route('/queue', methods=['GET'])
+def load_queue():
+    return get_queue()
 
 @app.route('/queue/add', methods=['POST'])
 def queue_song():
@@ -32,7 +36,7 @@ def upload_song():
     url = data.get('url')
     if not url:
         return jsonify({"error": "No URL provided"}), 400
-    
+
     # yt-dlp Konfiguration
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -43,15 +47,16 @@ def upload_song():
             'preferredquality': '192',
         }],
     }
-    
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info_dict)
+        print(filename)
         subpath = os.path.relpath(filename, RESOURCES_PATH)
-    
+
     # Song in die Datenbank einfügen
-    new_song = Song(title=info_dict['title'], artist=info_dict.get('uploader', 'Unknown'), file_path=subpath)
+    new_song = Song(title=info_dict['title'], artist=info_dict.get('uploader', 'Unknown'), year=None, album=None, file_path=subpath)
     db.session.add(new_song)
     db.session.commit()
-    
+
     return jsonify({"message": "Song uploaded successfully", "file_path": subpath})

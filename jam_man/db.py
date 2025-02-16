@@ -9,5 +9,4 @@ class Song(db.Model):
     file_path = db.Column(db.String(200), nullable=False)
 
 def init_db():
-    with db.app.app_context():
-        db.create_all()
+    db.create_all()
