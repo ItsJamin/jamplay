@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="player-card card mb-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-music-note-beamed"></i> Current Song</h5>
+                <div id="current-song" class="text-muted">- currently no music is playing -</div>
+                
+                <div class="d-flex justify-content-center mt-3">
+                    <button id="play-pause-btn" class="btn btn-main btn-alt me-2">
+                        <i class="bi bi-play"></i>
+                    </button>
+                    <button id="skip-btn" class="btn btn-main">
+                        <i class="bi bi-skip-forward"></i>
+                    </button>
+                </div>                
+                
+                <div class="progress-container mt-3" id="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                    <div class="progress-thumb" id="progress-thumb"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" 
+                           id="search-input" 
+                           class="form-control search-input" 
+                           placeholder="Search for Songs or paste a Youtube-Link...">
+                    <button id="add-btn" class="btn btn-main" disabled>
+                        <span class="btn-text">Add to queue</span>
+                    </button>
+                </div>
+                <div id="search-results" class="search-results"></div>
+                <div id="error-alert" class="alert alert-danger mt-2 d-none"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3"><i class="bi bi-list-ol"></i> Queue</h5>
+                <div id="queue-list" class="list-group"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/lang.de.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
