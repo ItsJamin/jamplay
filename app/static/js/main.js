@@ -4,6 +4,7 @@ let lastSearchQuery = '';
 let searchTimeout = null;
 let selectedSearchIndex = -1;
 let isDragging = false;
+let queue = [];
 
 $(document).ready(function() {
     // Event Listeners
@@ -23,10 +24,6 @@ $(document).ready(function() {
     // Initial UI setup
     applyTranslations();
     handleSearchInput();
-
-    setTimeout(updateQueue, 5000);
-    // Not necessary? setInterval(sendPlayerStatus, 2000);
-    sendPlayerStatus();
 });
 
 /* ----- UI Updates & Error Handling ----- */
@@ -48,12 +45,17 @@ function showError(message) {
 /* ----- Music Player Controls ----- */
 
 function playTrack(song) {
-    audioElement = new Audio(`api/play?song=${encodeURIComponent(song.name)}`);
+    if (audioElement) {
+        audioElement.pause();
+        audioElement = null;
+    }
+    audioElement = new Audio(`api/play?song=${song}`);
     audioElement.play();
     $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
     $('#current-song').text(song.name);
 
     audioElement.addEventListener("timeupdate", updateProgressBar);
+    audioElement.addEventListener("ended", skipTrack);
 }
 
 function togglePlayPause() {
@@ -71,18 +73,18 @@ function togglePlayPause() {
 }
 
 function skipTrack() {
-    if (!audioElement || !audioElement.src) return;
+    if (queue.length > 0) {
+        if (queue.length > 0) {
+            playTrack(queue[0]);
+            $('#current-song').text(queue[0]);
+            queue.shift();
+            updateQueue();
 
-    audioElement.pause();
-    audioElement = null;
-
-    $('#progress-bar').css('width', `${0}%`);
-    $('#progress-thumb').css('left', `${0}%`);
-    document.getElementById("current-song").textContent = "- " + lang.no_song_playing + " -";
-
-    updateQueue();
-    setTimeout(100,sendPlayerStatus());
-
+        } else {
+            audioElement = null;
+            $('#current-song').text("- " + lang.no_song_playing + " -");
+        }
+    }
 }
 
 /* ----- Search & Song Selection ----- */
@@ -173,6 +175,7 @@ function handleKeyboardNavigation(event) {
 
 function addToQueue() {
     const input = $('#search-input').val().trim();
+    if (!input) return;
     const isYoutube = isYoutubeUrl(input);
 
     const payload = isYoutube ? 
@@ -189,11 +192,16 @@ function addToQueue() {
     .then(response => response.json())
     .then(data => {
         if (data.error) throw new Error(data.error);
-        $('#search-input').val('');
+        queue.push(data.name);
         updateQueue();
+        if (!audioElement) {
+            skipTrack();
+        }
     })
-    .catch(showError)
-    .finally(() => resetButtonState());
+    .catch(showError);
+    
+    $('#search-input').val('');
+    resetButtonState();
 }
 
 function showLoadingState(isYoutube) {
@@ -213,29 +221,17 @@ function resetButtonState() {
 /* ----- Queue Management ----- */
 
 function updateQueue() {
-    fetch('/api/queue')
-        .then(response => response.json())
-        .then(queue => {
-            $('#queue-list').empty();
-            queue.forEach((song, index) => {
-                $('#queue-list').append(`
-                    <div class="list-group-item">
-                        <div class="song-info">
-                            <span class="song-position">${index + 1}.</span>
-                            <span class="song-name">${song.name}</span>
-                        </div>
-                    </div>
-                `);
-            });
-
-            if ((!audioElement) && queue.length > 0) {
-                playTrack(queue[0]);
-
-                setTimeout(updateQueue, 500);
-            }
-
-            $('#play-pause-btn, #skip-btn').prop('disabled', !audioElement);
-        });
+    $('#queue-list').empty();
+    queue.forEach((song, index) => {
+        $('#queue-list').append(`
+            <div class="list-group-item">
+                <div class="song-info">
+                    <span class="song-position">${index + 1}.</span>
+                    <span class="song-name">${song}</span>
+                </div>
+            </div>
+        `);
+    });
 }
 
 /* ----- Progress Bar Functions ----- */
