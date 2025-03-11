@@ -8,6 +8,7 @@ from threading import Thread, Lock
 
 bp = Blueprint('main', __name__)
 
+db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
 @bp.route('/')
 def index():
@@ -21,16 +22,13 @@ def play_song():
 
 @bp.route('/api/songs/')
 def list_songs():
-    query = request.args.get('q').lower()
-    songs = []
-    for f in os.listdir(Config.MUSIC_FOLDER):
-        if f.endswith(Config.ALLOWED_EXTENSION):
-            clean_name = os.path.splitext(f)[0]
-            if query in clean_name.lower() and query.strip() != "":
-                songs.append({
-                    'name': clean_name,
-                })
-    return jsonify(songs)
+    query = request.args.get('q', '').strip().lower()
+
+    matching_songs = [f for f in db if query in f.lower()]
+    sorted_songs = sorted(matching_songs, key=lambda f: (f.lower().find(query), f.lower()))
+
+    return jsonify(sorted_songs)
+
 
 @bp.route('/api/queue', methods=['POST'])
 def validate_song():

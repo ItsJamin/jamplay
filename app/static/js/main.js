@@ -24,6 +24,10 @@ $(document).ready(function() {
     // Initial UI setup
     applyTranslations();
     handleSearchInput();
+
+    $('#search-input').on('blur', function () {
+        setTimeout(() => $('#search-results').hide(), 200); // Kurze Verzögerung, damit Klicks auf Suchergebnisse registriert werden
+    });
 });
 
 /* ----- UI Updates & Error Handling ----- */
@@ -53,7 +57,7 @@ function playTrack(song) {
     audioElement = new Audio(`api/play?song=${song}`);
     audioElement.play();
     $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
-    $('#current-song').text(song.name);
+    $('#current-song').text(song);
 
     audioElement.addEventListener("timeupdate", updateProgressBar);
     audioElement.addEventListener("ended", skipTrack);
@@ -107,16 +111,16 @@ function handleSearchInput() {
     
     // Debounce search to avoid excessive API calls
     searchTimeout = setTimeout(() => {
-        if (query.length === 0) {
+        /* if (query.length === 0) {
             $('#search-results').hide();
             return;
-        }
+        } */
         
         fetch(`/api/songs?q=${encodeURIComponent(query)}`)
             .then(response => response.json())
             .then(handleSearchResults)
             .catch(error => showError(error.message));
-    }, 100);
+    }, 300);
 }
 
 function isYoutubeUrl(input) {
@@ -128,6 +132,7 @@ function selectSong() {
     $('#search-input').val(song);
     $('#search-results').hide();
     $('#search-input').focus();
+    $('#add-btn').prop('disabled', song === '');
 }
 
 function handleSearchResults(songs) {
@@ -140,8 +145,8 @@ function handleSearchResults(songs) {
     } else {
         songs.forEach(song => {
             results.append(`
-                <div class="search-item" data-name="${song.name}">
-                    ${song.name}
+                <div class="search-item" data-name="${song}">
+                    ${song}
                 </div>
             `);
         });
@@ -282,10 +287,18 @@ function updateQueue() {
                 }
             } else if (event.key == 'ArrowUp') {
                 item.prev().focus();
+                event.preventDefault();
             } else if (event.key == 'ArrowDown') {
                 item.next().focus();
+                event.preventDefault();
             } else if (event.key === 'Delete' || event.key === 'Backspace') {
                 queue.splice(focusedIndex, 1);
+                updateQueue();
+                event.preventDefault();
+            } else if (event.key === 'Space' || event.key === 'Enter') {
+                const movedItem = queue.splice(focusedIndex, 1)[0];
+                queue.splice(0, 0, movedItem);
+                skipTrack();
                 updateQueue();
                 event.preventDefault();
             }
