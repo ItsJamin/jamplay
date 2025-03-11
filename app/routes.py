@@ -14,7 +14,7 @@ bp = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-@bp.route('/play/')
+@bp.route('/api/play/')
 def play_song():
     song = request.args.get('song')
     player.play_song(song)
@@ -74,3 +74,10 @@ def get_queue():
     return jsonify([{
         'name': song
     } for song in queue])
+
+
+@bp.route('/api/player/status', methods=['POST'])
+def set_info():
+    data = request.json
+    print(data)
+    return jsonify({'success': True})

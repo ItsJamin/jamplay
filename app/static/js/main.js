@@ -23,7 +23,10 @@ $(document).ready(function() {
     // Initial UI setup
     applyTranslations();
     handleSearchInput();
-    updateQueue();
+
+    setTimeout(updateQueue, 5000);
+    // Not necessary? setInterval(sendPlayerStatus, 2000);
+    sendPlayerStatus();
 });
 
 /* ----- UI Updates & Error Handling ----- */
@@ -45,7 +48,7 @@ function showError(message) {
 /* ----- Music Player Controls ----- */
 
 function playTrack(song) {
-    audioElement = new Audio(`/play?song=${encodeURIComponent(song.name)}`);
+    audioElement = new Audio(`api/play?song=${encodeURIComponent(song.name)}`);
     audioElement.play();
     $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
     $('#current-song').text(song.name);
@@ -63,6 +66,8 @@ function togglePlayPause() {
         audioElement.pause();
         $('#play-pause-btn').html('<i class="bi bi-play"></i>');
     }
+
+    sendPlayerStatus();
 }
 
 function skipTrack() {
@@ -76,6 +81,8 @@ function skipTrack() {
     document.getElementById("current-song").textContent = "- " + lang.no_song_playing + " -";
 
     updateQueue();
+    setTimeout(100,sendPlayerStatus());
+
 }
 
 /* ----- Search & Song Selection ----- */
@@ -277,4 +284,20 @@ function onDrag(event) {
 
 function stopDrag() {
     isDragging = false;
+}
+
+/* ----- Feedback to Back-End ----- */
+function sendPlayerStatus() {
+    if (!audioElement || !audioElement.src) return;
+
+    fetch('/api/player/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            song: $('#current-song').text().trim(),
+            currentTime: audioElement.currentTime,
+            duration: audioElement.duration,
+            isPlaying: !audioElement.paused
+        })
+    }).catch(err => console.error(err));
 }
