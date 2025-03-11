@@ -4,6 +4,14 @@ body {
     min-height: 100vh;
 }
 
+/* Disable Scroll Bar */
+body {
+    overflow-x: hidden; 
+}
+*::-webkit-scrollbar {
+    display: none;
+}
+
 .card {
     background-color: #2d2d2d;
     border: 1px solid #404040;
@@ -192,17 +200,30 @@ body {
     align-items: center;
     padding: 10px;
     background: #333;
-    border: 1px solid #444;
     border-radius: 5px;
     margin-bottom: 5px;
     cursor: grab;
     transition: transform 0.15s ease-in-out, box-shadow 0.15s;
 }
 
-.draggable:active {
+.draggable:hover {
+    background-color: #404040;
     cursor: grabbing;
     transform: scale(1.02);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.draggable:focus-visible {
+    background-color: #404040;
+    cursor: grabbing;
+    transform: scale(1.02);
+    box-shadow: 0 0 0 0.025rem rgba(255, 255, 255, 0.5) !important;
+    outline: none !important;
+}
+
+.draggable:focus {
+    box-shadow: 0 0 0 0.025rem rgba(255, 255, 255, 0.5) !important;
+    outline: none !important;
 }
 
 .dragging {

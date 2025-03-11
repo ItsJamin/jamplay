@@ -127,6 +127,7 @@ function selectSong() {
     const song = $(this).data('name');
     $('#search-input').val(song);
     $('#search-results').hide();
+    $('#search-input').focus();
 }
 
 function handleSearchResults(songs) {
@@ -233,11 +234,15 @@ function resetButtonState() {
 
 function updateQueue() {
     const queueList = $('#queue-list');
+    const focusedIndex = queueList.find('.list-group-item:focus').index(); 
     queueList.empty();
 
     queue.forEach((song, index) => {
         const item = $(`
-            <div class="list-group-item draggable">
+            <div class="list-group-item draggable" 
+                 tabindex="0"
+                 data-index="${index}"
+                 aria-label="${song}, ${index + 1}">
                 <span class="song-name">${song}</span>
                 <i class="bi bi-trash delete-song"></i>
             </div>
@@ -253,13 +258,59 @@ function updateQueue() {
             updateQueue();
         });
 
+        // Keyboard-Controls
+        item.on('keydown', function (event) {
+            const focusedIndex = item.index();
+
+            if (event.ctrlKey) {
+                if (event.key === 'ArrowUp') {
+                    if (focusedIndex > 0) {
+                        const movedItem = queue.splice(focusedIndex, 1)[0];
+                        queue.splice(focusedIndex - 1, 0, movedItem);
+                        item.prev().focus();
+                        updateQueue();
+                    }
+                    event.preventDefault();
+                } else if (event.key === 'ArrowDown') {
+                    if (focusedIndex < queue.length - 1) {
+                        const movedItem = queue.splice(focusedIndex, 1)[0];
+                        queue.splice(focusedIndex + 1, 0, movedItem);
+                        item.next().focus();
+                        updateQueue();
+                    }
+                    event.preventDefault();
+                }
+            } else if (event.key == 'ArrowUp') {
+                item.prev().focus();
+            } else if (event.key == 'ArrowDown') {
+                item.next().focus();
+            } else if (event.key === 'Delete' || event.key === 'Backspace') {
+                queue.splice(focusedIndex, 1);
+                updateQueue();
+                event.preventDefault();
+            }
+        });
+
         queueList.append(item);
     });
+
+    // Set focus back
+    if (focusedIndex >= 0) {
+        queueList.find('.list-group-item').eq(focusedIndex).focus();
+    }
 
     new Sortable(queueList[0], {
         animation: 200,
         ghostClass: 'dragging',
+        onStart: function (evt) {
+            evt.from.querySelectorAll('.list-group-item').forEach(item => {
+                item.setAttribute('tabindex', '-1');
+            });
+        },
         onEnd: function (evt) {
+            evt.from.querySelectorAll('.list-group-item').forEach(item => {
+                item.setAttribute('tabindex', '0');
+            });
             const oldIndex = evt.oldIndex;
             const newIndex = evt.newIndex;
 
@@ -271,7 +322,6 @@ function updateQueue() {
         }
     });
 }
-
 
 /* ----- Progress Bar Functions ----- */
 
