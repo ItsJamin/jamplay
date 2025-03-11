@@ -42,17 +42,28 @@ def validate_song():
         
         try:
             with YoutubeDL(Config.YTDL_OPTIONS) as ydl:
+                info = ydl.extract_info(url, download=False)
+                original_filename = f"{info['title']}.wav"
+                
+                if data['rename'] and len(data['rename']) > 0:
+                    safe_rename = "".join(c for c in data['rename'] if c.isalnum() or c in (" ", "_", "-")).rstrip()
+                    new_filename = f"{safe_rename}.wav"
+                else:
+                    new_filename = original_filename
+
+                original_path = os.path.join(Config.MUSIC_FOLDER, original_filename)
+                target_path = os.path.join(Config.MUSIC_FOLDER, new_filename)
+
+                # Check that it is a new song before downloading
+                if os.path.exists(target_path):
+                    return jsonify({'error': 'Already a song in library with this name'})
+                
                 info = ydl.extract_info(url, download=True)
-                filename = f"{info['title']}.wav"
-                if 'rename' in data:
-                    filename = f"{data['rename']}.wav"
-                target_path = os.path.join(Config.MUSIC_FOLDER, filename)
-                
-                if not os.path.exists(target_path):
-                    os.rename(f"{filename}", target_path)
-                
-                # player.add_to_queue(filename)
-                return jsonify({'success': True, 'name': _get_songtitle(filename)})
+
+                if os.path.exists(original_path):
+                    os.rename(original_path, target_path)
+
+                return jsonify({'success': True, 'name': _get_songtitle(new_filename)})
         
         except Exception as e:
             return jsonify({'error': str(e)}), 400

@@ -9,6 +9,7 @@ lang = {
 
     downloading: "Herunterladen",
     adding: "Hinzufügen",
+    rename_song: "Wie soll der Song heißen? (leerlassen für YT-Namen)",
 
     // For visual errors
     err_std: "Ein Fehler ist aufgetreten",

@@ -40,6 +40,7 @@ function showError(message) {
     const alert = $('#error-alert');
     alert.text(message).removeClass('d-none');
     setTimeout(() => alert.addClass('d-none'), 3000);
+    resetButtonState();
 }
 
 /* ----- Music Player Controls ----- */
@@ -178,11 +179,15 @@ function addToQueue() {
     if (!input) return;
     const isYoutube = isYoutubeUrl(input);
 
-    const payload = isYoutube ? 
-        { url: input } : 
-        { song: input + '.wav' };
-
+    let rename = null;
+    if (isYoutube) {
+        rename = prompt(lang.rename_song);
+    }
     showLoadingState(isYoutube);
+
+    const payload = isYoutube ? 
+        { url: input, rename: rename } : 
+        { song: input + '.wav' };
 
     fetch('/api/queue', {
         method: 'POST',
@@ -197,19 +202,24 @@ function addToQueue() {
         if (!audioElement) {
             skipTrack();
         }
+        resetButtonState();
     })
     .catch(showError);
     
     $('#search-input').val('');
-    resetButtonState();
 }
 
 function showLoadingState(isYoutube) {
     const btn = $('#add-btn');
     btn.prop('disabled', true);
-    document.getElementById("add-btn").querySelector(".btn-text").textContent = isYoutube ? 
-        lang.downloading: 
-        lang.add_to_queue_btn;
+    
+    const btnText = document.getElementById("add-btn").querySelector(".btn-text");
+    
+    if (isYoutube) {
+        btnText.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${lang.downloading}`;
+    } else {
+        btnText.textContent = lang.add_to_queue_btn;
+    }
 }
 
 function resetButtonState() {
