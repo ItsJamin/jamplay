@@ -185,3 +185,38 @@ body {
     left: 0%;
     transform: translateX(-50%);
 }
+
+.draggable {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    cursor: grab;
+    transition: transform 0.15s ease-in-out, box-shadow 0.15s;
+}
+
+.draggable:active {
+    cursor: grabbing;
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.dragging {
+    opacity: 0.7;
+    background-color: #404040;
+}
+
+.delete-song {
+    display: none;
+    color: #c19042;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.delete-song:hover {
+    transform: scale(1.3);
+}

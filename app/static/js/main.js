@@ -78,7 +78,7 @@ function skipTrack() {
         if (queue.length > 0) {
             playTrack(queue[0]);
             $('#current-song').text(queue[0]);
-            queue.shift();
+            queue.splice(0, 1);
             updateQueue();
 
         } else {
@@ -116,7 +116,7 @@ function handleSearchInput() {
             .then(response => response.json())
             .then(handleSearchResults)
             .catch(error => showError(error.message));
-    }, 300);
+    }, 100);
 }
 
 function isYoutubeUrl(input) {
@@ -176,6 +176,7 @@ function handleKeyboardNavigation(event) {
 
 function addToQueue() {
     const input = $('#search-input').val().trim();
+    selectSong();
     if (!input) return;
     const isYoutube = isYoutubeUrl(input);
 
@@ -231,18 +232,46 @@ function resetButtonState() {
 /* ----- Queue Management ----- */
 
 function updateQueue() {
-    $('#queue-list').empty();
+    const queueList = $('#queue-list');
+    queueList.empty();
+
     queue.forEach((song, index) => {
-        $('#queue-list').append(`
-            <div class="list-group-item">
-                <div class="song-info">
-                    <span class="song-position">${index + 1}.</span>
-                    <span class="song-name">${song}</span>
-                </div>
+        const item = $(`
+            <div class="list-group-item draggable">
+                <span class="song-name">${song}</span>
+                <i class="bi bi-trash delete-song"></i>
             </div>
         `);
+
+        item.hover(
+            function () { $(this).find('.delete-song').fadeIn(150); },
+            function () { $(this).find('.delete-song').fadeOut(150); }
+        );
+
+        item.find('.delete-song').on('click', () => {
+            queue.splice(index, 1);
+            updateQueue();
+        });
+
+        queueList.append(item);
+    });
+
+    new Sortable(queueList[0], {
+        animation: 200,
+        ghostClass: 'dragging',
+        onEnd: function (evt) {
+            const oldIndex = evt.oldIndex;
+            const newIndex = evt.newIndex;
+
+            if (oldIndex !== newIndex) {
+                const movedItem = queue.splice(oldIndex, 1)[0];
+                queue.splice(newIndex, 0, movedItem);
+                updateQueue();
+            }
+        }
     });
 }
+
 
 /* ----- Progress Bar Functions ----- */
 
