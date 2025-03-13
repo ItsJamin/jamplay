@@ -95,6 +95,14 @@ def set_info():
     return jsonify({'success': True})
 
 
+@bp.route('/api/player/status', methods=['GET'])
+def get_info():
+    return jsonify({
+        'name': vis.song_name,
+        'time': vis.elapsed_time,
+        'playing': vis.song_playing,
+        'success': True
+    })
 
 # Help Functions
 

@@ -18,6 +18,8 @@ class Visualizer:
         self.clock = pygame.time.Clock()
         self.running = False
         self.thread = None
+
+        self.elapsed_time = None
     
     def get_song_file(self):
         try: 
@@ -30,15 +32,6 @@ class Visualizer:
         """
         Updates the song metadata for visualization.
         """ 
-
-        time_point_reference = data_dict["time"]
-        backend_at_time_point_reference = (time_point_reference/1000) - (self.song_timestamp / 1000) + self.song_pos
-        print(f"""UPDATE FEEDBACK: 
-              Point of Time: {time_point_reference}
-                - Where it should be: {data_dict["position"]}
-                - Where it is: {backend_at_time_point_reference}
-                - Difference of: {abs(data_dict["position"]-backend_at_time_point_reference)}
-              """)
 
         self.song_pos = float(data_dict["position"])
         self.song_playing = bool(data_dict["playing"])
@@ -85,8 +78,8 @@ class Visualizer:
                 self.screen.blit(text, (20, 50))
                 
                 if self.song_playing:
-                    elapsed_time = time.time() - (self.song_timestamp) + self.song_pos
-                time_text = self.font.render(f"Time: {elapsed_time:.2f} sec", True, (255, 255, 255))
+                    self.elapsed_time = time.time() - (self.song_timestamp) + self.song_pos
+                time_text = self.font.render(f"Time: {self.elapsed_time:.2f} sec", True, (255, 255, 255))
                 self.screen.blit(time_text, (20, 100))
             
             pygame.display.flip()

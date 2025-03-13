@@ -24,6 +24,7 @@ $(document).ready(function() {
     // Initial UI setup
     applyTranslations();
     handleSearchInput();
+    getCurrentData();
 
     $('#search-input').on('blur', function () {
         setTimeout(() => $('#search-results').hide(), 200); // Kurze Verzögerung, damit Klicks auf Suchergebnisse registriert werden
@@ -35,8 +36,8 @@ $(document).ready(function() {
 function formatTime(seconds) {
     let min = Math.floor(seconds / 60);
     let sec = Math.floor(seconds % 60);
-    let milsec = Math.floor((seconds % 1) * 100);
-    return `${min}:${sec < 10 ? "0" : ""}${sec}.${milsec}`;
+    // let milsec = Math.floor((seconds % 1) * 100);
+    return `${min}:${sec < 10 ? "0" : ""}${sec}`;
 }
 
 function applyTranslations() {
@@ -56,14 +57,19 @@ function showError(message) {
 
 /* ----- Music Player Controls ----- */
 
-function playTrack(song) {
+function playTrack(song, play=true) {
     if (audioElement) {
         audioElement.pause();
         audioElement = null;
     }
     audioElement = new Audio(`api/play?song=${song}`);
-    audioElement.play();
-    $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
+    if (play) {
+        audioElement.play();
+        $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
+    }
+    else {
+        $('#play-pause-btn').html('<i class="bi bi-play"></i>');
+    }
     $('#current-song').text(song);
 
     audioElement.addEventListener("timeupdate", updateProgressBar);
@@ -80,8 +86,6 @@ function togglePlayPause() {
         audioElement.pause();
         $('#play-pause-btn').html('<i class="bi bi-play"></i>');
     }
-
-    console.log(audioElement.currentTime)
 
     sendPlayerStatus()
 }
@@ -418,4 +422,23 @@ function sendPlayerStatus() {
             })
         }).catch(err => console.error(err));
     }, 10);
+}
+
+function getCurrentData() {
+    fetch('/api/player/status')
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) throw new Error(data.error);
+        if (data.name) {
+            playTrack(data.name, false);
+            if (!audioElement || (!audioElement.src && audioElement.paused)) return;
+
+            if (data.time) {
+                audioElement.currentTime = data.time;
+            } else {
+                audioElement.currentTime = 0;
+            }
+            updateProgressBar();
+        }
+    });
 }
