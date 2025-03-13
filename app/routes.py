@@ -5,10 +5,14 @@ from config import Config
 import time
 import subprocess
 from threading import Thread, Lock
+from tools.visualization import Visualizer
 
 bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
+
+vis = Visualizer()
+vis.start()
 
 @bp.route('/')
 def index():
@@ -17,7 +21,6 @@ def index():
 @bp.route('/api/play/')
 def play_song():
     song = request.args.get('song')
-    print(song)
     return send_from_directory(Config.MUSIC_FOLDER, _get_filename(song))
 
 @bp.route('/api/songs/')
@@ -80,8 +83,15 @@ def validate_song():
 
 @bp.route('/api/player/status', methods=['POST'])
 def set_info():
+    """
+    Gets Data in a specific format:
+    - playing: true/false
+    - time: when action was executed
+    - name: name of song
+    - position: position in song
+    """
     data = request.json
-    print(data)
+    vis.update(data)
     return jsonify({'success': True})
 
 

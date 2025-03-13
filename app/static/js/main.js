@@ -32,6 +32,13 @@ $(document).ready(function() {
 
 /* ----- UI Updates & Error Handling ----- */
 
+function formatTime(seconds) {
+    let min = Math.floor(seconds / 60);
+    let sec = Math.floor(seconds % 60);
+    let milsec = Math.floor((seconds % 1) * 100);
+    return `${min}:${sec < 10 ? "0" : ""}${sec}.${milsec}`;
+}
+
 function applyTranslations() {
     document.querySelector(".card-title i.bi-music-note-beamed").nextSibling.nodeValue = " " + lang.current_song;
     document.getElementById("current-song").textContent = "- " + lang.no_song_playing + " -";
@@ -74,7 +81,9 @@ function togglePlayPause() {
         $('#play-pause-btn').html('<i class="bi bi-play"></i>');
     }
 
-    sendPlayerStatus();
+    console.log(audioElement.currentTime)
+
+    sendPlayerStatus()
 }
 
 function skipTrack() {
@@ -84,7 +93,7 @@ function skipTrack() {
             $('#current-song').text(queue[0]);
             queue.splice(0, 1);
             updateQueue();
-
+            sendPlayerStatus();
         } else {
             audioElement = null;
             $('#current-song').text("- " + lang.no_song_playing + " -");
@@ -344,6 +353,7 @@ function updateProgressBar() {
     const progress = (audioElement.currentTime / audioElement.duration) * 100;
     $('#progress-bar').css('width', `${progress}%`);
     $('#progress-thumb').css('left', `${progress}%`);
+    $('#time-display').text(`${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`);
 
     if (progress > 99) {
         setTimeout(skipTrack, 200);
@@ -382,20 +392,30 @@ function onDrag(event) {
 
 function stopDrag() {
     isDragging = false;
+    sendPlayerStatus();
 }
 
 /* ----- Feedback to Back-End ----- */
+let statusUpdateTimeout = null;
+
 function sendPlayerStatus() {
     if (!audioElement || !audioElement.src) return;
 
-    fetch('/api/player/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            song: $('#current-song').text().trim(),
-            currentTime: audioElement.currentTime,
-            duration: audioElement.duration,
-            isPlaying: !audioElement.paused
-        })
-    }).catch(err => console.error(err));
+    if (statusUpdateTimeout) {
+        clearTimeout(statusUpdateTimeout);
+    }
+
+
+    statusUpdateTimeout = setTimeout(() => {
+        fetch('/api/player/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: $('#current-song').text().trim(),
+                position: audioElement.currentTime,
+                playing: !audioElement.paused,
+                time: Date.now()
+            })
+        }).catch(err => console.error(err));
+    }, 10);
 }
