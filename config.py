@@ -11,5 +11,7 @@ class Config:
             'preferredcodec': 'wav',
             'preferredquality': '192',
         }],
-        'outtmpl': 'music/%(title)s.%(ext)s',
+        'outtmpl': 'music/___temp.%(ext)s',
     }
+
+    FORBIDDEN_CHARS_IN_NAME = ["~", "“", "#", "%", "&", "*" ,":", "<", ">" ,"?", "/", "\\", "{", "|", "}"]

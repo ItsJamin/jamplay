@@ -92,16 +92,19 @@ function togglePlayPause() {
 
 function skipTrack() {
     if (queue.length > 0) {
-        if (queue.length > 0) {
-            playTrack(queue[0]);
-            $('#current-song').text(queue[0]);
-            queue.splice(0, 1);
-            updateQueue();
-            sendPlayerStatus();
-        } else {
-            audioElement = null;
-            $('#current-song').text("- " + lang.no_song_playing + " -");
-        }
+        playTrack(queue[0]);
+        $('#current-song').text(queue[0]);
+        queue.splice(0, 1);
+        updateQueue();
+        sendPlayerStatus();
+    } else {
+        $('#play-pause-btn').html('<i class="bi bi-play"></i>');
+        audioElement.pause();
+        audioElement = null;
+        $('#current-song').text("- " + lang.no_song_playing + " -");
+        $('#progress-bar').css('width', `${0}%`);
+        $('#progress-thumb').css('left', `${0}%`);
+        $('#time-display').text(`- / -`);
     }
 }
 
@@ -415,9 +418,9 @@ function sendPlayerStatus() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                name: $('#current-song').text().trim(),
-                position: audioElement.currentTime,
-                playing: !audioElement.paused,
+                name: audioElement ? $('#current-song').text().trim(): "",
+                position: audioElement ? audioElement.currentTime: 0,
+                playing: audioElement ? !audioElement.paused: false,
                 time: Date.now()
             })
         }).catch(err => console.error(err));
