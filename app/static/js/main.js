@@ -64,10 +64,10 @@ function playTrack(song, play=true) {
     audioElement = new Audio(`api/play?song=${song}`);
     if (play) {
         audioElement.play();
-        $('#play-pause-btn').html('<i class="btn-text bi bi-pause"></i>');
+        $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
     }
     else {
-        $('#play-pause-btn').html('<i class="btn-text bi bi-play"></i>');
+        $('#play-pause-btn').html('<i class="bi bi-play"></i>');
     }
     $('#current-song').text(song);
 
@@ -80,10 +80,10 @@ function togglePlayPause() {
 
     if (audioElement.paused) {
         audioElement.play();
-        $('#play-pause-btn').html('<i class="btn-text bi bi-pause"></i>');
+        $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
     } else {
         audioElement.pause();
-        $('#play-pause-btn').html('<i class="btn-text bi bi-play"></i>');
+        $('#play-pause-btn').html('<i class="bi bi-play"></i>');
     }
 
     sendPlayerStatus()
