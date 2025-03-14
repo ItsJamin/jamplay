@@ -14,8 +14,7 @@
     <div class="container py-4">
         <div class="player-card card mb-4">
             <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-music-note-beamed"></i> Current Song</h5>
-                <div id="current-song" class="text-muted">- currently no music is playing -</div>
+                <h5 class="card-title"><i class="bi bi-music-note-beamed"></i> <span id="current-song">- currently no music is playing -</span></h5>
                 <span id="time-display" class="text-muted">- / -</span>
                 
                 <div class="d-flex justify-content-center mt-3">
@@ -62,7 +61,6 @@
     <script src="{{ url_for('static', filename='js/lang.de.js') }}"></script>
 
     <script>
-        document.querySelector(".card-title i.bi-music-note-beamed").nextSibling.nodeValue = " " + lang.current_song;
         document.getElementById("current-song").textContent = "- " + lang.no_song_playing + " -";
         document.getElementById("search-input").setAttribute("placeholder", lang.default_search_text);
         document.getElementById("add-btn").querySelector(".btn-text").textContent = lang.add_to_queue_btn;

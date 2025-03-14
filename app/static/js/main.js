@@ -41,7 +41,6 @@ function formatTime(seconds) {
 }
 
 function applyTranslations() {
-    document.querySelector(".card-title i.bi-music-note-beamed").nextSibling.nodeValue = " " + lang.current_song;
     document.getElementById("current-song").textContent = "- " + lang.no_song_playing + " -";
     document.getElementById("search-input").setAttribute("placeholder", lang.default_search_text);
     document.getElementById("add-btn").querySelector(".btn-text").textContent = lang.add_to_queue_btn;
@@ -65,10 +64,10 @@ function playTrack(song, play=true) {
     audioElement = new Audio(`api/play?song=${song}`);
     if (play) {
         audioElement.play();
-        $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
+        $('#play-pause-btn').html('<i class="btn-text bi bi-pause"></i>');
     }
     else {
-        $('#play-pause-btn').html('<i class="bi bi-play"></i>');
+        $('#play-pause-btn').html('<i class="btn-text bi bi-play"></i>');
     }
     $('#current-song').text(song);
 
@@ -81,10 +80,10 @@ function togglePlayPause() {
 
     if (audioElement.paused) {
         audioElement.play();
-        $('#play-pause-btn').html('<i class="bi bi-pause"></i>');
+        $('#play-pause-btn').html('<i class="btn-text bi bi-pause"></i>');
     } else {
         audioElement.pause();
-        $('#play-pause-btn').html('<i class="bi bi-play"></i>');
+        $('#play-pause-btn').html('<i class="btn-text bi bi-play"></i>');
     }
 
     sendPlayerStatus()
@@ -94,6 +93,7 @@ function skipTrack() {
     if (queue.length > 0) {
         playTrack(queue[0]);
         $('#current-song').text(queue[0]);
+        document.title = queue[0];
         queue.splice(0, 1);
         updateQueue();
         sendPlayerStatus();
@@ -105,6 +105,7 @@ function skipTrack() {
         $('#progress-bar').css('width', `${0}%`);
         $('#progress-thumb').css('left', `${0}%`);
         $('#time-display').text(`- / -`);
+        document.title = "JamPlayer";
     }
 }
 
@@ -358,9 +359,12 @@ function updateProgressBar() {
     if (isDragging || !audioElement || !audioElement.duration) return;
 
     const progress = (audioElement.currentTime / audioElement.duration) * 100;
+    let time = `${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`;
     $('#progress-bar').css('width', `${progress}%`);
     $('#progress-thumb').css('left', `${progress}%`);
-    $('#time-display').text(`${formatTime(audioElement.currentTime)} / ${formatTime(audioElement.duration)}`);
+    $('#time-display').text(time);
+
+    // document.title = `${formatTime(audioElement.currentTime)}` + " " + document.getElementById("current-song").textContent;
 
     if (progress > 99) {
         setTimeout(skipTrack, 200);
