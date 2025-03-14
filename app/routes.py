@@ -5,13 +5,13 @@ from config import Config
 import time
 import subprocess
 from threading import Thread, Lock
-from tools.visualization import Visualizer
+from tools.visualization import PygameVisualizer
 
 bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
-vis = Visualizer()
+vis = PygameVisualizer()
 vis.start()
 
 @bp.route('/')
