@@ -11,7 +11,7 @@ bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
-vis = BaseVisualizer()
+vis = PygameVisualizer()
 vis.start()
 
 @bp.route('/')
