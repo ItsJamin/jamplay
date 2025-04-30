@@ -1,9 +1,9 @@
-import pygame
 import os
 import time
 import threading
 from config import Config
 import scipy.io.wavfile as wav
+from tools.analysis import analyze_segment  # Importiere Analyse-Funktion
 
 class BaseVisualizer:
     def __init__(self):
@@ -34,8 +34,6 @@ class BaseVisualizer:
         self.song_pos = float(data_dict["position"])
         self.song_playing = bool(data_dict["playing"])
         self.song_timestamp = time.time() 
-        # SHOULD: int(data_dict["time"])
-        # Timestamp reference is somehow worse, maybe because of fingerprinting defense mechanisms
 
         if self.song_name != str(data_dict["name"]):
             self.song_name = str(data_dict["name"])
@@ -63,6 +61,8 @@ class BaseVisualizer:
         """
         Runs the visualization loop in a separate thread.
         """
+        previous_segment = None  # Placeholder for audio segment caching
+        
         while self.running:
             # Display song info
             if self.song_name:
@@ -71,4 +71,16 @@ class BaseVisualizer:
                 if self.song_playing:
                     self.elapsed_time = time.time() - (self.song_timestamp) + self.song_pos
                 time_text = f"Time: {self.elapsed_time:.2f} sec"
-                print(time_text, (20, 100))
+                print(time_text)
+
+                if self.music_file is not None:
+                    # Extract current audio segment
+                    audio_segment = self.music_file[int(self.elapsed_time * self.sample_rate):int((self.elapsed_time + 0.1) * self.sample_rate)]
+                    # Perform analysis on the audio segment
+                    analysis_data = analyze_segment(audio_segment, self.sample_rate)
+                    print("Current Analysis Data:")
+                    for key, value in analysis_data.items():
+                        print(f"{key}: {value}")
+            
+            time.sleep(0.1)  # Avoid maxing out the CPU
+

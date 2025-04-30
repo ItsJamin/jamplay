@@ -5,13 +5,13 @@ from config import Config
 import time
 import subprocess
 from threading import Thread, Lock
-from tools.visualization import PygameVisualizer
+from tools.visualization import PygameVisualizer, BaseVisualizer
 
 bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
-vis = PygameVisualizer()
+vis = BaseVisualizer()
 vis.start()
 
 @bp.route('/')
@@ -63,7 +63,7 @@ def validate_song():
                 if os.path.exists(original_path):
                     os.rename(original_path, target_path)
 
-                db.append(new_filename)
+                db.append(_get_songtitle(new_filename))
 
                 return jsonify({'success': True, 'name': _get_songtitle(new_filename)})
         
