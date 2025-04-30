@@ -17,9 +17,16 @@ def get_audio_segment(audio_data, sample_rate, start_time, duration=0.1):
     return audio_data[start_sample:end_sample]
 
 
-def normalize_amplitudes(magnitudes, max_height):
-    max_value = max(magnitudes) if max(magnitudes) > 0 else 1
-    return [int((m / max_value) * max_height) for m in magnitudes]
+def normalize_amplitudes(magnitudes, max_height=200):
+    max_value = np.max(magnitudes)
+    if max_value > 0:
+        normalized_magnitudes = (magnitudes / max_value) * max_height
+    else:
+        normalized_magnitudes = np.zeros_like(magnitudes)
+    return normalized_magnitudes
+
+def log_scale_amplitudes(magnitudes):
+    return np.log1p(magnitudes)  # log(1 + magnitudes)
 
 
 def rms(audio_segment):
@@ -75,6 +82,8 @@ def analyze_segment(audio_segment, sample_rate):
         audio_segment = np.mean(audio_segment, axis=1)
 
     fft = compute_fft(audio_segment, sample_rate)
+    fft_normalized = normalize_amplitudes(np.array(fft), max_height=1.0)
+
     centroid = spectral_centroid(audio_segment, sample_rate)
     bandwidth = spectral_bandwidth(audio_segment, sample_rate, centroid)
     flux = spectral_flux(audio_segment, previous_segment_cache)
@@ -84,13 +93,13 @@ def analyze_segment(audio_segment, sample_rate):
     is_silent = rms_val < 0.01
 
     analysis = {
-        "fft": fft,
-        "bass_level": np.mean(fft[:5]),
-        "mid_level": np.mean(fft[5:15]),
-        "treble_level": np.mean(fft[30:]),
-        "overall_energy": np.mean(fft),
-        "melody_energy": np.mean(fft[10:20]),
-        "high_freq_energy": np.mean(fft[30:]),
+        "fft": fft_normalized,
+        "bass_level": np.mean(fft_normalized[:5]),
+        "mid_level": np.mean(fft_normalized[5:15]),
+        "treble_level": np.mean(fft_normalized[30:]),
+        "overall_energy": np.mean(fft_normalized),
+        "melody_energy": np.mean(fft_normalized[10:20]),
+        "high_freq_energy": np.mean(fft_normalized[30:]),
         "energy_delta": 0.0,
         "spectral_centroid": centroid,
         "spectral_bandwidth": bandwidth,

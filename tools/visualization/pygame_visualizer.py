@@ -2,21 +2,24 @@ import pygame
 import time
 from tools.visualization import BaseVisualizer
 from tools.analysis import analyze_segment, get_audio_segment, normalize_amplitudes
+from tools.mapping import BaseMapper, BasicFFTMapper
+import numpy as np
 
 class PygameVisualizer(BaseVisualizer):
-    def __init__(self):
+    def __init__(self, width, height, mapper_cls=BasicFFTMapper):
         super().__init__()
 
+        self.width = width
+        self.height = height
+        self.mapper = mapper_cls(width, height)
+
         pygame.init()
-        self.screen = pygame.display.set_mode((400, 200))
+        self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Music Visualizer")
         self.font = pygame.font.Font(None, 36)
         self.clock = pygame.time.Clock()
 
     def visualize(self):
-        """
-        Main visualization loop using analyzed audio features only.
-        """
         while self.running:
             self.screen.fill((0, 0, 0))  # Clear screen
 
@@ -31,33 +34,17 @@ class PygameVisualizer(BaseVisualizer):
 
                 try:
                     analysis = analyze_segment(audio_segment, self.sample_rate)
-                    fft_magnitudes = analysis["fft"]
-                    bar_heights = normalize_amplitudes(fft_magnitudes, max_height=200)
+                    if self.mapper:
+                        frame_array = self.mapper.map(analysis)  # -> RGB 2D array (height x width x 3)
 
-                    # Draw bars based on FFT
-                    num_bars = len(bar_heights)
-                    bar_width = self.screen.get_width() // num_bars
-                    for i, height in enumerate(bar_heights):
-                        pygame.draw.rect(
-                            self.screen,
-                            (0, 255, 0),
-                            (
-                                i * bar_width,
-                                self.screen.get_height() - height,
-                                bar_width - 2,
-                                height
-                            )
-                        )
-
-                    # Example: show energy or other info as text (optional)
-                    energy = analysis["overall_energy"]
-                    label = self.font.render(f"Energy: {energy:.2f}", True, (255, 255, 255))
-                    self.screen.blit(label, (10, 10))
+                        surface = pygame.surfarray.make_surface(np.transpose(frame_array, (1, 0, 2)))
+                        self.screen.blit(surface, (0, 0))
 
                 except Exception as e:
-                    print("Visualization error:", e)
+                    print(f"Visualizer error: {e}")
 
             pygame.display.flip()
             self.clock.tick(30)
+
 
         pygame.quit()

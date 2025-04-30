@@ -3,7 +3,7 @@ import time
 import threading
 from config import Config
 import scipy.io.wavfile as wav
-from tools.analysis import analyze_segment  # Importiere Analyse-Funktion
+from tools.analysis import analyze_segment
 
 class BaseVisualizer:
     def __init__(self):
@@ -18,6 +18,9 @@ class BaseVisualizer:
 
         self.music_file = None
         self.sample_rate = None
+
+        self.width, self.height = 0, 0
+        self.mapper = None
     
     def set_song_file(self):
         try: 
