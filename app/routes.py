@@ -6,12 +6,13 @@ import time
 import subprocess
 from threading import Thread, Lock
 from tools.visualization import PygameVisualizer, BaseVisualizer
+from tools.mapping import EnergyFlowMapper
 
 bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
-vis = PygameVisualizer(400,400)
+vis = PygameVisualizer(400,400, mapper_cls=EnergyFlowMapper)
 vis.start()
 
 @bp.route('/')
