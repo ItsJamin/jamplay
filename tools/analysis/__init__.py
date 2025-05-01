@@ -1,18 +1,15 @@
 import numpy as np
 
 
+# === Core Audio Analysis Functions ===
 def compute_fft(audio_segment, sample_rate, num_bins=50):
     fft_result = np.fft.rfft(audio_segment)
     magnitudes = np.abs(fft_result)
     freqs = np.fft.rfftfreq(len(audio_segment), d=1/sample_rate)
 
     bin_size = max(1, len(magnitudes) // num_bins)
-    reduced_magnitudes = []
-    reduced_freqs = []
-
-    for i in range(0, len(magnitudes), bin_size):
-        reduced_magnitudes.append(np.mean(magnitudes[i:i+bin_size]))
-        reduced_freqs.append(np.mean(freqs[i:i+bin_size]))
+    reduced_magnitudes = [np.mean(magnitudes[i:i+bin_size]) for i in range(0, len(magnitudes), bin_size)]
+    reduced_freqs = [np.mean(freqs[i:i+bin_size]) for i in range(0, len(freqs), bin_size)]
 
     return np.array(reduced_magnitudes), np.array(reduced_freqs)
 
@@ -24,33 +21,25 @@ def get_audio_segment(audio_data, sample_rate, start_time, duration=0.1):
 
 
 def normalize_amplitudes(magnitudes, max_height=200):
+    magnitudes = np.log1p(magnitudes)
     max_value = np.max(magnitudes)
-    if max_value > 0:
-        normalized_magnitudes = (magnitudes / max_value) * max_height
-    else:
-        normalized_magnitudes = np.zeros_like(magnitudes)
-    return normalized_magnitudes
+    return (magnitudes / max_value) * max_height if max_value > 0 else np.zeros_like(magnitudes)
 
 
-def rms(audio_segment):
-    return np.sqrt(np.mean(np.square(audio_segment)))
+def compute_basic_metrics(audio_segment):
+    rms_val = np.sqrt(np.mean(np.square(audio_segment)))
+    zcr = ((audio_segment[:-1] * audio_segment[1:]) < 0).sum() / len(audio_segment)
+    loudness = 20 * np.log10(rms_val + 1e-10)
+    dynamic_range = np.max(audio_segment) - np.min(audio_segment)
+    return rms_val, zcr, loudness, dynamic_range
 
 
-def zero_crossing_rate(audio_segment):
-    return ((audio_segment[:-1] * audio_segment[1:]) < 0).sum() / len(audio_segment)
-
-
-def spectral_centroid(magnitudes, sample_rate):
-    freqs = np.fft.fftfreq(len(magnitudes), d=1/sample_rate)
-    positive_freqs = freqs[:len(freqs) // 2]
-    positive_magnitudes = magnitudes[:len(magnitudes) // 2]
-    return np.sum(positive_freqs * positive_magnitudes) / (np.sum(positive_magnitudes) + 1e-10)
-
-
-def spectral_bandwidth(audio_segment, sample_rate, centroid):
+def compute_spectral_features(audio_segment, sample_rate):
     magnitudes = np.abs(np.fft.rfft(audio_segment))
     freqs = np.fft.rfftfreq(len(audio_segment), d=1/sample_rate)
-    return np.sqrt(np.sum(((freqs - centroid) ** 2) * magnitudes) / (np.sum(magnitudes) + 1e-10))
+    centroid = np.sum(freqs * magnitudes) / (np.sum(magnitudes) + 1e-10)
+    bandwidth = np.sqrt(np.sum(((freqs - centroid) ** 2) * magnitudes) / (np.sum(magnitudes) + 1e-10))
+    return centroid, bandwidth
 
 
 def spectral_flux(current_segment, previous_segment):
@@ -61,10 +50,30 @@ def spectral_flux(current_segment, previous_segment):
     return np.sum((curr_mag - prev_mag) ** 2)
 
 
-previous_segment_cache = None
+def compute_frequency_bands(fft_normalized, freqs):
+    bass = [mag for mag, freq in zip(fft_normalized, freqs) if freq < 250]
+    mid = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 1000]
+    treble = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 1000]
+    melody = [mag for mag, freq in zip(fft_normalized, freqs) if 100 <= freq < 2000]
+    high = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 2000]
+    return bass, mid, treble, melody, high
 
+
+# === Persistent Cache ===
+previous_segment_cache = None
+previous_energy_value = 0.0
+previous_flux_values = []
+
+def new_music():
+    global previous_segment_cache, previous_energy_value, previous_flux_values
+    previous_segment_cache = None
+    previous_energy_value = 0.0
+    previous_flux_values = []
+
+
+# === Main Analysis Entry Point ===
 def analyze_segment(audio_segment, sample_rate):
-    global previous_segment_cache
+    global previous_segment_cache, previous_energy_value, previous_flux_values
 
     if audio_segment.ndim > 1:
         audio_segment = np.mean(audio_segment, axis=1)
@@ -72,36 +81,34 @@ def analyze_segment(audio_segment, sample_rate):
     fft, freqs = compute_fft(audio_segment, sample_rate)
     fft_normalized = normalize_amplitudes(np.array(fft), max_height=1.0)
 
-    centroid = spectral_centroid(audio_segment, sample_rate)
-    bandwidth = spectral_bandwidth(audio_segment, sample_rate, centroid)
+    centroid, bandwidth = compute_spectral_features(audio_segment, sample_rate)
     flux = spectral_flux(audio_segment, previous_segment_cache)
-    zcr = zero_crossing_rate(audio_segment)
-    rms_val = rms(audio_segment)
+    rms_val, zcr, loudness, dynamic_range = compute_basic_metrics(audio_segment)
 
     is_silent = rms_val < 0.01
-
-    # Bass: < 250 Hz
-    bass_magnitudes = [mag for mag, freq in zip(fft_normalized, freqs) if freq < 250]
-    bass_level = np.mean(bass_magnitudes) if bass_magnitudes else 0.0
-    
-    # Mid: 250 Hz to 2 kHz
-    mid_magnitudes = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 1000]
-    mid_level = np.mean(mid_magnitudes) if mid_magnitudes else 0.0
-    
-    # Treble: > 2 kHz
-    treble_magnitudes = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 1000]
-    treble_level = np.mean(treble_magnitudes) if treble_magnitudes else 0.0
-
-    # Overall energy: consider all frequency ranges
     overall_energy = np.mean(fft_normalized)
+    energy_change = overall_energy - previous_energy_value
+    previous_energy_value = overall_energy
 
-    # Melody energy: this range can vary based on your preference, but let's take 10 Hz to 2000 Hz
-    melody_magnitudes = [mag for mag, freq in zip(fft_normalized, freqs) if 10 <= freq < 2000]
-    melody_energy = np.mean(melody_magnitudes) if melody_magnitudes else 0.0
+    bass, mid, treble, melody, high = compute_frequency_bands(fft_normalized, freqs)
+    bass_level = np.mean(bass) if bass else 0.0
+    mid_level = np.mean(mid) if mid else 0.0
+    treble_level = np.mean(treble) if treble else 0.0
+    melody_energy = np.mean(melody) if melody else 0.0
+    high_freq_energy = np.mean(high) if high else 0.0
 
-    # High frequency energy: this could be anything above 2000 Hz
-    high_freq_magnitudes = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 2000]
-    high_freq_energy = np.mean(high_freq_magnitudes) if high_freq_magnitudes else 0.0
+    total_energy = overall_energy + 1e-6
+    bass_ratio = bass_level / total_energy
+    mid_ratio = mid_level / total_energy
+    treble_ratio = treble_level / total_energy
+
+    spectral_contrast = np.std(fft_normalized)
+
+    previous_flux_values.append(flux)
+    if len(previous_flux_values) > 5:
+        previous_flux_values.pop(0)
+    is_beat = flux > 2.0 * np.mean(previous_flux_values)
+    attack = max(0.0, flux - zcr)
 
     analysis = {
         "fft": fft_normalized,
@@ -116,6 +123,15 @@ def analyze_segment(audio_segment, sample_rate):
         "spectral_flux": flux,
         "zero_crossing_rate": zcr,
         "rms": rms_val,
+        "loudness": loudness,
+        "dynamic_range": dynamic_range,
+        "energy_change": energy_change,
+        "bass_ratio": bass_ratio,
+        "mid_ratio": mid_ratio,
+        "treble_ratio": treble_ratio,
+        "spectral_contrast": spectral_contrast,
+        "is_beat": is_beat,
+        "attack": attack,
         "tempo_estimate": 0.0,
         "is_silent": is_silent,
     }
