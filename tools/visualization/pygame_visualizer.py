@@ -14,7 +14,7 @@ class PygameVisualizer(BaseVisualizer):
         self.mapper = mapper_cls(width, height)
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         pygame.display.set_caption("Music Visualizer")
         self.font = pygame.font.Font(None, 36)
         self.clock = pygame.time.Clock()
@@ -27,6 +27,9 @@ class PygameVisualizer(BaseVisualizer):
                 if event.type == pygame.QUIT:
                     self.stop()
                     return
+                elif event.type == pygame.VIDEORESIZE:
+                    self.width, self.height = event.size
+                    self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
 
             if self.song_name and self.song_playing and self.music_file is not None:
                 self.elapsed_time = time.time() - self.song_timestamp + self.song_pos
@@ -36,12 +39,12 @@ class PygameVisualizer(BaseVisualizer):
                     analysis = analyze_segment(audio_segment, self.sample_rate)
                     if self.mapper:
                         frame_array = self.mapper.map(analysis)  # -> RGB 2D array (height x width x 3)
-
                         surface = pygame.surfarray.make_surface(np.transpose(frame_array, (1, 0, 2)))
-                        self.screen.blit(surface, (0, 0))
+                        scaled_surface = pygame.transform.scale(surface, self.screen.get_size())
+                        self.screen.blit(scaled_surface, (0, 0))
 
                 except Exception as e:
-                    print(f"Visualizer error: {e}")
+                    pass
 
             pygame.display.flip()
             self.clock.tick(30)
