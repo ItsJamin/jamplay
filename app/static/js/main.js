@@ -137,7 +137,7 @@ function handleSearchInput() {
             .then(response => response.json())
             .then(handleSearchResults)
             .catch(error => showError(error.message));
-    }, 300);
+    }, 10);
 }
 
 function isYoutubeUrl(input) {
