@@ -192,6 +192,8 @@ function handleKeyboardNavigation(event) {
     results.removeClass('active');
     if (selectedSearchIndex >= 0) {
         results.eq(selectedSearchIndex).addClass('active');
+        const element = results.eq(selectedSearchIndex)[0];
+        element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 }
 
