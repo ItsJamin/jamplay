@@ -45,9 +45,20 @@ def compute_spectral_features(audio_segment, sample_rate):
 def spectral_flux(current_segment, previous_segment):
     if previous_segment is None or len(previous_segment) != len(current_segment):
         return 0.0
+    
+    # Berechne das Frequenzspektrum
     curr_mag = np.abs(np.fft.rfft(current_segment))
     prev_mag = np.abs(np.fft.rfft(previous_segment))
-    return np.sum((curr_mag - prev_mag) ** 2)
+    
+    # Berechne die Differenz
+    flux = np.sum((curr_mag - prev_mag) ** 2)
+    
+    # Normalisierung des flux-Werts auf einen maximalen Wert (z.B. das Maximum der Spektren)
+    max_flux = np.sum(curr_mag**2)  # Summe der quadratischen Magnituden als Referenz
+    normalized_flux = flux / max_flux if max_flux != 0 else 0.0
+    
+    return normalized_flux
+
 
 
 def compute_frequency_bands(fft_normalized, freqs):
