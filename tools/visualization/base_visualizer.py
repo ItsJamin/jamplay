@@ -2,7 +2,7 @@ import os
 import time
 import threading
 import scipy.io.wavfile as wav
-from tools.analysis import analyze_segment
+from tools.analysis import analyze_segment, set_audio
 
 class BaseVisualizer:
     def __init__(self):
@@ -28,8 +28,11 @@ class BaseVisualizer:
         try: 
             path = os.path.join(self.music_folder, self.song_name + ".wav")
             self.sample_rate, self.music_file = wav.read(path)
+            
+            set_audio(self.music_file, self.sample_rate)
         except:
             self.music_file = None
+        
     
     def update(self, data_dict):
         """
@@ -71,18 +74,17 @@ class BaseVisualizer:
         while self.running:
             # Display song info
             if self.song_name:
-                print(f"Now Playing: {self.song_name}")
+                #print(f"Now Playing: {self.song_name}")
                 
                 if self.song_playing:
                     self.elapsed_time = time.time() - (self.song_timestamp) + self.song_pos
-                time_text = f"Time: {self.elapsed_time:.2f} sec"
-                print(time_text)
+                #time_text = f"Time: {self.elapsed_time:.2f} sec"
+                #print(time_text)
+
 
                 if self.music_file is not None:
-                    # Extract current audio segment
-                    audio_segment = self.music_file[int(self.elapsed_time * self.sample_rate):int((self.elapsed_time + 0.1) * self.sample_rate)]
-                    # Perform analysis on the audio segment
-                    analysis_data = analyze_segment(audio_segment, self.sample_rate)
+                    # Perform Analysis at current tiemstamp
+                    analysis_data = analyze_segment(self.elapsed_time, self.sample_rate)
                     print("Current Analysis Data:")
                     for key, value in analysis_data.items():
                         print(f"{key}: {value}")

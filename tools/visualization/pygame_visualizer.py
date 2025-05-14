@@ -1,7 +1,7 @@
 import pygame
 import time
 from tools.visualization import BaseVisualizer
-from tools.analysis import analyze_segment, get_audio_segment, normalize_amplitudes
+from tools.analysis import analyze_segment
 from tools.mapping import BaseMapper, BasicFFTMapper
 import numpy as np
 
