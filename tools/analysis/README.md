@@ -8,6 +8,20 @@ This documentation explains all features extracted by the `analyze_segment` func
 
 ---
 
+## Global Features
+Global features are those that are calculated for the whole audio file once in the beginning.
+
+### `is_beat`
+`beats` are precalculated. `is_beat` is a boolean that states if a given segment has a beat in it. A beat is detected when a certain energy level is reached.
+
+Value-Range: True or False
+
+### `bpm`
+Beats per Minute is a way of measuring the tempo of a song. This implementation should not be taken as accurate but more like a direction for the overall speed of the song. It is based on the calculated `beats` but with a filter - intervals less than 0.3 are not considered individual beats as this would suggest a bpm of 200 or higher (not usual).
+
+Value-Range: 0 to 200
+Typical values: 50 to 150
+
 ## Frequency-Based Features
 
 ### `spectral_centroid`
@@ -36,3 +50,12 @@ The spectral flux measures how quickly the power changes.
 
 Value-Range: 0 to Infinity
 Typical Values: It is really depending on the music. Some music have hundreds as "normal amount of flux" and the thousands are only when the song is changing quickly. 
+
+
+## Other
+
+### `zero_crossing_rate`
+How often a single segment of data crosses the zero-line. It is generally a quick indicator for a pitch of a signal.
+
+Value-Range: 0 to 1
+Typical Values: 0.05 to 0.5
