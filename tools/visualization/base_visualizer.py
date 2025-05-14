@@ -1,12 +1,14 @@
 import os
 import time
 import threading
-from config import Config
 import scipy.io.wavfile as wav
 from tools.analysis import analyze_segment
 
 class BaseVisualizer:
     def __init__(self):
+        from config import Config
+        self.music_folder = Config.MUSIC_FOLDER
+
         self.song_name = None
         self.song_pos = 0.0
         self.song_playing = False
@@ -24,7 +26,7 @@ class BaseVisualizer:
     
     def set_song_file(self):
         try: 
-            path = os.path.join(Config.MUSIC_FOLDER, self.song_name + ".wav")
+            path = os.path.join(self.music_folder, self.song_name + ".wav")
             self.sample_rate, self.music_file = wav.read(path)
         except:
             self.music_file = None
