@@ -62,12 +62,14 @@ def spectral_flux(current_segment, previous_segment):
 
 
 def compute_frequency_bands(fft_normalized, freqs):
-    bass = [mag for mag, freq in zip(fft_normalized, freqs) if freq < 250]
-    mid = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 1000]
-    treble = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 1000]
-    melody = [mag for mag, freq in zip(fft_normalized, freqs) if 100 <= freq < 2000]
-    high = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 2000]
+    bass = [mag for mag, freq in zip(fft_normalized, freqs) if 20 <= freq < 250]
+    mid = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 2000]
+    melody = [mag for mag, freq in zip(fft_normalized, freqs) if 200 <= freq < 1200]
+    treble = [mag for mag, freq in zip(fft_normalized, freqs) if 2000 <= freq < 6000]
+    high = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 6000]
+
     return bass, mid, treble, melody, high
+
 
 
 # === Persistent Cache ===

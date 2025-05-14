@@ -6,13 +6,13 @@ import time
 import subprocess
 from threading import Thread, Lock
 from tools.visualization import PygameVisualizer, BaseVisualizer
-from tools.mapping import ScrollingMapper
+from tools.mapping import AdaptiveLineMapper as mapper
 
 bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
-vis = PygameVisualizer(400,400, mapper_cls=ScrollingMapper)
+vis = PygameVisualizer(400,400, mapper_cls=mapper)
 vis.start()
 
 @bp.route('/')

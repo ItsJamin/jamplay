@@ -42,9 +42,8 @@ class PygameVisualizer(BaseVisualizer):
                         surface = pygame.surfarray.make_surface(np.transpose(frame_array, (1, 0, 2)))
                         scaled_surface = pygame.transform.scale(surface, self.screen.get_size())
                         self.screen.blit(scaled_surface, (0, 0))
-
                 except Exception as e:
-                    pass
+                    print(e)
 
             pygame.display.flip()
             self.clock.tick(30)

@@ -20,6 +20,7 @@ class ScrollingMapper(BaseMapper):
         bass = analysis_data["bass_level"]
         mid = analysis_data["mid_level"]
         treble = analysis_data["treble_level"]
+        melody = analysis_data["melody_energy"]
         loudness = analysis_data["loudness"]
         spectral_centroid = analysis_data["spectral_centroid"]
         spectral_flux = analysis_data["spectral_flux"]
@@ -32,10 +33,11 @@ class ScrollingMapper(BaseMapper):
         bass_y = int(height * (1.0 - bass))
         mid_y = int(height * (1.0 - mid))
         treble_y = int(height * (1.0 - treble))
+        melody_y = int(height * (1.0 - melody))
 
         # Bass = Rot, Mid = Grün, Treble = Blau
         self.output[bass_y, x] = [255, 0, 0]
-        self.output[mid_y, x] = [0, 255, 0]
+        self.output[melody_y, x] = [0, 255, 0]
         self.output[treble_y, x] = [0, 0, 255]
 
         # === Beat detection: white vertical line ===
@@ -62,6 +64,5 @@ class ScrollingMapper(BaseMapper):
         # Blue bar for spectral flux
         if flux_height > 0:
             self.output[height - flux_height: height, x] = [0, 255, 255]  # Blue
-        print(spectral_flux)
 
         return self.output
