@@ -17,28 +17,30 @@ class ScrollingMapper(BaseMapper):
         x = self.width - 1  # Rightmost column
 
         # === Feature Extraction ===
-        bass = analysis_data["bass_level"]
-        mid = analysis_data["mid_level"]
-        treble = analysis_data["treble_level"]
-        melody = analysis_data["melody_energy"]
+        bass = analysis_data["bass_ratio"]
+        mid = analysis_data["mid_ratio"]
+        treble = analysis_data["treble_ratio"]
+        melody = analysis_data["melody_ratio"]
+        high = analysis_data["high_ratio"]
         loudness = analysis_data["loudness"]
         spectral_centroid = analysis_data["spectral_centroid"]
         spectral_flux = analysis_data["spectral_flux"]
         is_beat = analysis_data["is_beat"]
 
         # === Map frequency levels to Y positions ===
-        # === Frequenz-Farben ===
 
-        # Skalieren für y-Position
-        bass_y = int(height * (1.0 - bass))
-        mid_y = int(height * (1.0 - mid))
-        treble_y = int(height * (1.0 - treble))
-        melody_y = int(height * (1.0 - melody))
+        # Scale for y-positioning
+        bass_y = int((height-1) * (1.0 - bass))
+        mid_y = int((height-1) * (1.0 - mid))
+        melody_y = int((height-1) * (1.0 - melody))
+        treble_y = int((height-1) * (1.0 - treble))
+        high_y = int((height - 1) * (1.0 - high))
 
-        # Bass = Rot, Mid = Grün, Treble = Blau
-        self.output[bass_y, x] = [255, 0, 0]
-        self.output[melody_y, x] = [0, 255, 0]
-        self.output[treble_y, x] = [0, 0, 255]
+        self.output[bass_y, x] = [0, 0, 200]
+        self.output[melody_y, x] = [000, 100, 200]
+        self.output[mid_y, x] = [0, 200, 0]
+        self.output[treble_y, x] = [200, 100, 0]
+        self.output[high_y, x] = [200, 0, 0]
 
         # === Beat detection: white vertical line ===
         if is_beat:

@@ -62,13 +62,14 @@ def spectral_flux(current_segment, previous_segment):
 
 
 def compute_frequency_bands(fft_normalized, freqs):
+    beat = [mag for mag, freq in zip(fft_normalized, freqs) if freq < 70]
     bass = [mag for mag, freq in zip(fft_normalized, freqs) if 20 <= freq < 250]
     mid = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 2000]
-    melody = [mag for mag, freq in zip(fft_normalized, freqs) if 200 <= freq < 1200]
+    melody = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 1200]
     treble = [mag for mag, freq in zip(fft_normalized, freqs) if 2000 <= freq < 6000]
     high = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 6000]
 
-    return bass, mid, treble, melody, high
+    return beat, bass, mid, treble, melody, high
 
 
 
@@ -103,17 +104,21 @@ def analyze_segment(audio_segment, sample_rate):
     energy_change = overall_energy - previous_energy_value
     previous_energy_value = overall_energy
 
-    bass, mid, treble, melody, high = compute_frequency_bands(fft_normalized, freqs)
+    beat, bass, mid, treble, melody, high = compute_frequency_bands(fft_normalized, freqs)
+    beat_level = np.mean(beat) if beat else 0.0
     bass_level = np.mean(bass) if bass else 0.0
     mid_level = np.mean(mid) if mid else 0.0
     treble_level = np.mean(treble) if treble else 0.0
-    melody_energy = np.mean(melody) if melody else 0.0
-    high_freq_energy = np.mean(high) if high else 0.0
+    melody_level = np.mean(melody) if melody else 0.0
+    high_level = np.mean(high) if high else 0.0
 
     total_energy = overall_energy + 1e-6
+    beat_ratio = beat_level / total_energy
     bass_ratio = bass_level / total_energy
     mid_ratio = mid_level / total_energy
     treble_ratio = treble_level / total_energy
+    melody_ratio = melody_level / total_energy
+    high_ratio = high_level / total_energy
 
     spectral_contrast = np.std(fft_normalized)
 
@@ -125,12 +130,13 @@ def analyze_segment(audio_segment, sample_rate):
 
     analysis = {
         "fft": fft_normalized,
+        "beat_level": beat_level,
         "bass_level": bass_level,
         "mid_level": mid_level,
         "treble_level": treble_level,
         "overall_energy": overall_energy,
-        "melody_energy": melody_energy,
-        "high_freq_energy": high_freq_energy,
+        "melody_level": melody_level,
+        "high_level": high_level,
         "spectral_centroid": centroid,
         "spectral_bandwidth": bandwidth,
         "spectral_flux": flux,
@@ -142,6 +148,8 @@ def analyze_segment(audio_segment, sample_rate):
         "bass_ratio": bass_ratio,
         "mid_ratio": mid_ratio,
         "treble_ratio": treble_ratio,
+        "melody_ratio": melody_ratio,
+        "high_ratio": high_ratio,
         "spectral_contrast": spectral_contrast,
         "is_beat": is_beat,
         "attack": attack,
