@@ -11,20 +11,25 @@ What are the benefits?
 + you don't get problems with linux alsa audio driver sh*t
 + you don't get problems with linux sudo rights (e.g. one library which only works in sudo and another one that only works without sudo)
 + (you don't get problems with librosa dependencies because the feature-analysis is selfmade)
+What is suboptimal?
 - minor latencies in synchronisation (should not be an issue in the end)
 - setup is not really portable because it needs wifi and an open port probably
 - website as the player is a little bit awkward and access-concept is needed so that not multiple people play music
 
-## Components
+# Setup Your Own JamPlay
 
-### JamPlayer
+Coming soon...
+
+# Components
+
+## JamPlayer
 The music player is a website that can be used for playing, queueing or adding songs to your library.
 
-### The BackEnd
+## The BackEnd
 The backend of the website serves as an organizer, download-handler and gives the search results of the local library.
 The backend is also responsible for keeping the visualizer on the BackEnd Device and the music on the FrontEnd synced.
 
-### JamVisualizer
+## JamVisualizer
 The visualizer should visualize the music. There are three main steps to this:
 - Analyze: Analyses the music and gives back the features
 - Mapper: How the features are *presented* ("What should be on the canvas?"), e.g. beats should make the screen red.
