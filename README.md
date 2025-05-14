@@ -11,6 +11,7 @@ What are the benefits?
 + you don't get problems with linux alsa audio driver sh*t
 + you don't get problems with linux sudo rights (e.g. one library which only works in sudo and another one that only works without sudo)
 + (you don't get problems with librosa dependencies because the feature-analysis is selfmade)
+
 What is suboptimal?
 - minor latencies in synchronisation (should not be an issue in the end)
 - setup is not really portable because it needs wifi and an open port probably
