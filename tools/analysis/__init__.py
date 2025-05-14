@@ -51,7 +51,21 @@ def get_segment_at_time(timestamp, duration, sample_rate):
 
 
 # === Calculating Functions ===
+def compute_rms(audio):
+    return np.sqrt(np.mean(audio**2))
 
+def compute_spectral_centroid(audio, sample_rate):
+    N = len(audio)
+    if N == 0:
+        return 0.0
+    windowed = audio * np.hanning(N)
+    magnitude = np.abs(np.fft.fft(windowed))[:N//2]
+    freqs = np.fft.fftfreq(N, d=1/sample_rate)[:N//2]
+
+    if np.sum(magnitude) == 0:
+        return 0.0
+
+    return np.sum(freqs * magnitude) / np.sum(magnitude)
 
 # === Main Analysis Entry Point ===
 def analyze_segment(timestamp, sample_rate):
@@ -60,8 +74,13 @@ def analyze_segment(timestamp, sample_rate):
     sample_rate: int
     returns a dictionary of feature values
     """
+    segment_duration = 0.1  # seconds
+    segment = get_segment_at_time(timestamp, segment_duration, sample_rate)
 
     analysis = {
+        "rms": compute_rms(segment),
+        "spectral_centroid": compute_spectral_centroid(segment, sample_rate),
+        # LATER TODO: add more features here
     }
 
     return analysis
