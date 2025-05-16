@@ -1,162 +1,251 @@
 import numpy as np
+from typing import Dict, Tuple, Optional
 
+# === CONSTANTS =================================================================
+SUBBAND_RANGES = {
+    "band_sub_bass": (20, 60),
+    "band_bass": (60, 250),
+    "band_low_mid": (250, 500),
+    "band_mid": (500, 2000),
+    "band_high_mid": (2000, 4000),
+    "band_presence": (4000, 6000),
+    "band_brilliance": (6000, 20000)
+}
 
-# === Core Audio Analysis Functions ===
-def compute_fft(audio_segment, sample_rate, num_bins=50):
-    fft_result = np.fft.rfft(audio_segment)
-    magnitudes = np.abs(fft_result)
-    freqs = np.fft.rfftfreq(len(audio_segment), d=1/sample_rate)
+DEFAULT_FEATURES = {
+    "rms": 0.0,
+    "zero_crossing_rate": 0.0,
+    "is_silent": True,
+    "is_beat": False,
+    "bpm": 0.0,
+    "spectral_centroid": 0.0,
+    "normalized_magnitudes": np.array([]),
+    "spectral_flux": 0.0,
+    **{band: 0.0 for band in SUBBAND_RANGES}
+}
 
-    bin_size = max(1, len(magnitudes) // num_bins)
-    reduced_magnitudes = [np.mean(magnitudes[i:i+bin_size]) for i in range(0, len(magnitudes), bin_size)]
-    reduced_freqs = [np.mean(freqs[i:i+bin_size]) for i in range(0, len(freqs), bin_size)]
+ANALYSIS_WINDOW = 0.1  # Seconds for analysis frames
+BEAT_MIN_INTERVAL = 0.3  # Minimum time between beats (200 BPM max)
+SILENCE_THRESHOLD = 0.005  # RMS threshold for silence detection
+EPSILON = 1e-9  # Small value to prevent division by zero
 
-    return np.array(reduced_magnitudes), np.array(reduced_freqs)
+# === GLOBAL STATE =============================================================
+_audio_buffer: Optional[np.ndarray] = None
+_sample_rate: int = None
+_audio_length: float = 0.0
+_audio_props: Dict = {
+    "beats": [],
+    "bpm": None,
+    "subband_stats": {"means": {}, "stds": {}},
+}
+_global_calculated = False
 
+# === CORE AUDIO HANDLING ======================================================
+def set_audio(data: np.ndarray, sample_rate: int) -> None:
+    """Initialize audio analysis system with normalized audio data"""
+    global _audio_buffer, _sample_rate, _audio_length, _global_calculated
 
-def get_audio_segment(audio_data, sample_rate, start_time, duration=0.1):
-    start_sample = int(start_time * sample_rate)
-    end_sample = start_sample + int(duration * sample_rate)
-    return audio_data[start_sample:end_sample]
+    _sample_rate = sample_rate
+    _audio_length = len(data) / sample_rate
+    _global_calculated = False
+    
+    # Convert stereo to mono if needed
+    if len(data.shape) == 2:
+        data = data.mean(axis=1).astype(data.dtype)
+    
+    _audio_buffer = _normalize_audio(data)
+    
+    _analyze_full_audio()
 
+def get_segment_at_time(timestamp: float, duration: float) -> np.ndarray:
+    """Extract audio segment with zero-padding if out of bounds"""
+    if _audio_buffer is None:
+        return np.zeros(int(duration * _sample_rate))
+    
+    start = int(timestamp * _sample_rate)
+    end = start + int(duration * _sample_rate)
+    segment = np.zeros(int(duration * _sample_rate))
+    
+    if 0 <= start < len(_audio_buffer):
+        available = _audio_buffer[start:min(end, len(_audio_buffer))]
+        segment[:len(available)] = available
+    
+    return segment
 
-def normalize_amplitudes(magnitudes, max_height=200):
-    magnitudes = np.log1p(magnitudes)
-    max_value = np.max(magnitudes)
-    return (magnitudes / max_value) * max_height if max_value > 0 else np.zeros_like(magnitudes)
+def _normalize_audio(audio: np.ndarray) -> np.ndarray:
+    """Normalize different integer formats to [-1.0, 1.0] floats"""
+    if audio.dtype == np.int16:
+        return audio.astype(np.float32) / 32768.0
+    elif audio.dtype == np.int32:
+        return audio.astype(np.float32) / 2147483648.0
+    elif audio.dtype == np.uint8:
+        return (audio.astype(np.float32) - 128) / 128.0
+    return audio.astype(np.float32)
 
+# === SPECTRAL ANALYSIS ========================================================
+def _a_weighting(frequencies: np.ndarray) -> np.ndarray:
+    """
+    Calculate A-weighting coefficients for frequency array.
+    Based on IEC 61672:2003 standard.
+    """
+    f_sq = np.square(frequencies)
+    numerator = (12200**2 * f_sq**2)
+    denominator = (f_sq + 20.6**2) * np.sqrt((f_sq + 107.7**2) * (f_sq + 737.9**2)) * (f_sq + 12200**2)
+    return numerator / (denominator + EPSILON)
 
-def compute_basic_metrics(audio_segment):
-    rms_val = np.sqrt(np.mean(np.square(audio_segment)))
-    zcr = ((audio_segment[:-1] * audio_segment[1:]) < 0).sum() / len(audio_segment)
-    loudness = 20 * np.log10(rms_val + 1e-10)
-    dynamic_range = np.max(audio_segment) - np.min(audio_segment)
-    return rms_val, zcr, loudness, dynamic_range
+def _compute_subband_energies(freqs: np.ndarray, magnitudes: np.ndarray) -> Dict[str, float]:
+    """Calculate energy in each frequency band with A-weighting applied"""
+    weights = _a_weighting(freqs)
+    weighted = magnitudes * weights
+    
+    energies = {}
+    for band, (low, high) in SUBBAND_RANGES.items():
+        mask = (freqs >= low) & (freqs < high)
+        energies[band] = np.sum(weighted[mask]**2)
+    
+    return energies
 
+def _calculate_global_subband_stats() -> None:
+    """Pre-calculate subband statistics for the entire track"""
+    frame_size = int(ANALYSIS_WINDOW * _sample_rate)
+    energies = {band: [] for band in SUBBAND_RANGES}
+    
+    for i in range(0, len(_audio_buffer) - frame_size, frame_size):
+        frame = _audio_buffer[i:i+frame_size]
+        freqs, mag = compute_magnitude_spectrum(frame)
+        band_energy = _compute_subband_energies(freqs, mag)
+        
+        for band, energy in band_energy.items():
+            energies[band].append(energy)
+    
+    for band in SUBBAND_RANGES:
+        arr = np.array(energies[band])
+        _audio_props["subband_stats"]["means"][band] = np.mean(arr)
+        _audio_props["subband_stats"]["stds"][band] = np.std(arr) + EPSILON
 
-def compute_spectral_features(audio_segment, sample_rate):
-    magnitudes = np.abs(np.fft.rfft(audio_segment))
-    freqs = np.fft.rfftfreq(len(audio_segment), d=1/sample_rate)
-    centroid = np.sum(freqs * magnitudes) / (np.sum(magnitudes) + 1e-10)
-    bandwidth = np.sqrt(np.sum(((freqs - centroid) ** 2) * magnitudes) / (np.sum(magnitudes) + 1e-10))
-    return centroid, bandwidth
+# === FEATURE CALCULATIONS =====================================================
+def compute_magnitude_spectrum(audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute frequency bins and magnitude spectrum for audio segment"""
+    N = len(audio)
+    if N == 0:
+        return np.array([]), np.array([])
+    
+    windowed = audio * np.hanning(N)
+    spectrum = np.fft.fft(windowed)
+    magnitude = np.abs(spectrum[:N//2])
+    freqs = np.fft.fftfreq(N, d=1/_sample_rate)[:N//2]
+    
+    return freqs, magnitude
 
-
-def spectral_flux(current_segment, previous_segment):
-    if previous_segment is None or len(previous_segment) != len(current_segment):
+def compute_spectral_centroid(freqs: np.ndarray, magnitudes: np.ndarray) -> float:
+    """Calculate spectral centroid from frequency spectrum"""
+    if np.sum(magnitudes) == 0:
         return 0.0
+    return np.sum(freqs * magnitudes) / np.sum(magnitudes)
+
+def compute_spectral_flux(current_mag: np.ndarray, previous_mag: np.ndarray) -> float:
+    """Calculate spectral flux between consecutive frames"""
+    diff = current_mag - previous_mag
+    diff[diff < 0] = 0  # Only consider increases
+    return np.sum(diff**2)
+
+# === TEMPO ANALYSIS ===========================================================
+def _detect_beats() -> None:
+    """Simple beat detection using energy thresholding"""
+    frame_size = 1024
+    hop_size = 512
+    energies = []
+    timestamps = []
     
-    # Berechne das Frequenzspektrum
-    curr_mag = np.abs(np.fft.rfft(current_segment))
-    prev_mag = np.abs(np.fft.rfft(previous_segment))
+    for i in range(0, len(_audio_buffer) - frame_size, hop_size):
+        frame = _audio_buffer[i:i+frame_size]
+        energies.append(compute_energy(frame))
+        timestamps.append(i / _sample_rate)
     
-    # Berechne die Differenz
-    flux = np.sum((curr_mag - prev_mag) ** 2)
+    energies = np.array(energies)
+    threshold = np.mean(energies) + 1.5 * np.std(energies)
     
-    # Normalisierung des flux-Werts auf einen maximalen Wert (z.B. das Maximum der Spektren)
-    max_flux = np.sum(curr_mag**2)  # Summe der quadratischen Magnituden als Referenz
-    normalized_flux = flux / max_flux if max_flux != 0 else 0.0
+    _audio_props["beats"] = [t for t, e in zip(timestamps, energies) if e > threshold]
     
-    return normalized_flux
+    # Filter beats with minimum interval
+    filtered = []
+    for beat in _audio_props["beats"]:
+        if not filtered or (beat - filtered[-1]) >= BEAT_MIN_INTERVAL:
+            filtered.append(beat)
+    
+    # Calculate BPM from median interval
+    if len(filtered) > 1:
+        intervals = np.diff(filtered)
+        _audio_props["bpm"] = 60 / np.median(intervals)
+    else:
+        _audio_props["bpm"] = 0.0
 
+# === MAIN ANALYSIS ENTRY POINTS ===============================================
+def _analyze_full_audio() -> None:
+    global _global_calculated
+    """Full audio preprocessing pipeline"""
+    _audio_props.update({"beats": [], "bpm": None, "subband_stats": {"means": {}, "stds": {}},})
+    _detect_beats()
+    _calculate_global_subband_stats()
+    _global_calculated = True
 
+def analyze_segment(timestamp: float) -> Dict:
+    """Get audio features with progressive enhancement of global features"""
 
-def compute_frequency_bands(fft_normalized, freqs):
-    beat = [mag for mag, freq in zip(fft_normalized, freqs) if freq < 70]
-    bass = [mag for mag, freq in zip(fft_normalized, freqs) if 20 <= freq < 250]
-    mid = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 2000]
-    melody = [mag for mag, freq in zip(fft_normalized, freqs) if 250 <= freq < 1200]
-    treble = [mag for mag, freq in zip(fft_normalized, freqs) if 2000 <= freq < 6000]
-    high = [mag for mag, freq in zip(fft_normalized, freqs) if freq >= 6000]
+    result = DEFAULT_FEATURES.copy()
+    segment = get_segment_at_time(timestamp, ANALYSIS_WINDOW)
 
-    return beat, bass, mid, treble, melody, high
+    # Time-domain features
+    result.update({
+        "rms": compute_rms(segment),
+        "zero_crossing_rate": compute_zero_crossing_rate(segment),
+        "is_silent": is_silent(segment)
+    })
 
+    # Frequency-domain features
+    freqs, mag = compute_magnitude_spectrum(segment)
+    result.update({
+        "spectral_centroid": compute_spectral_centroid(freqs, mag),
+        "normalized_magnitudes": mag / (np.max(mag) + EPSILON)
+    })
+    if timestamp >= ANALYSIS_WINDOW:
+        prev_segment = get_segment_at_time(timestamp - ANALYSIS_WINDOW, ANALYSIS_WINDOW)
+        if len(prev_segment) > 0:
+            _, prev_mag = compute_magnitude_spectrum(prev_segment)
+            result["spectral_flux"] = compute_spectral_flux(mag, prev_mag)
+    
+    # If global features are calculated
+    if _global_calculated:
+        # Beat detection features
+        result.update({
+            "is_beat": _is_beat(timestamp),
+            "bpm": _audio_props["bpm"]
+        })
+        
+        # Subband features (only if frequency analysis succeeded)
+        raw_energies = _compute_subband_energies(freqs, mag)
+        for band, energy in raw_energies.items():
+            mean = _audio_props["subband_stats"]["means"][band]
+            std = _audio_props["subband_stats"]["stds"][band]
+            result[band] = np.tanh((energy - mean) / (std * 3))
+    
+    return result
 
+# === UTILITY FUNCTIONS ========================================================
+def compute_rms(audio: np.ndarray) -> float:
+    return np.sqrt(np.mean(audio**2))
 
-# === Persistent Cache ===
-previous_segment_cache = None
-previous_energy_value = 0.0
-previous_flux_values = []
+def compute_energy(audio: np.ndarray) -> float:
+    return np.mean(audio**2)
 
-def new_music():
-    global previous_segment_cache, previous_energy_value, previous_flux_values
-    previous_segment_cache = None
-    previous_energy_value = 0.0
-    previous_flux_values = []
+def compute_zero_crossing_rate(audio: np.ndarray) -> float:
+    return np.mean(np.abs(np.diff(np.sign(audio))))
 
+def is_silent(audio: np.ndarray) -> bool:
+    return compute_rms(audio) < SILENCE_THRESHOLD
 
-# === Main Analysis Entry Point ===
-def analyze_segment(audio_segment, sample_rate):
-    global previous_segment_cache, previous_energy_value, previous_flux_values
-
-    if audio_segment.ndim > 1:
-        audio_segment = np.mean(audio_segment, axis=1)
-
-    fft, freqs = compute_fft(audio_segment, sample_rate)
-    fft_normalized = normalize_amplitudes(np.array(fft), max_height=1.0)
-
-    centroid, bandwidth = compute_spectral_features(audio_segment, sample_rate)
-    flux = spectral_flux(audio_segment, previous_segment_cache)
-    rms_val, zcr, loudness, dynamic_range = compute_basic_metrics(audio_segment)
-
-    is_silent = rms_val < 0.01
-    overall_energy = np.mean(fft_normalized)
-    energy_change = overall_energy - previous_energy_value
-    previous_energy_value = overall_energy
-
-    beat, bass, mid, treble, melody, high = compute_frequency_bands(fft_normalized, freqs)
-    beat_level = np.mean(beat) if beat else 0.0
-    bass_level = np.mean(bass) if bass else 0.0
-    mid_level = np.mean(mid) if mid else 0.0
-    treble_level = np.mean(treble) if treble else 0.0
-    melody_level = np.mean(melody) if melody else 0.0
-    high_level = np.mean(high) if high else 0.0
-
-    total_energy = overall_energy + 1e-6
-    beat_ratio = beat_level / total_energy
-    bass_ratio = bass_level / total_energy
-    mid_ratio = mid_level / total_energy
-    treble_ratio = treble_level / total_energy
-    melody_ratio = melody_level / total_energy
-    high_ratio = high_level / total_energy
-
-    spectral_contrast = np.std(fft_normalized)
-
-    previous_flux_values.append(flux)
-    if len(previous_flux_values) > 5:
-        previous_flux_values.pop(0)
-    is_beat = flux > 2.0 * np.mean(previous_flux_values)
-    attack = max(0.0, flux - zcr)
-
-    analysis = {
-        "fft": fft_normalized,
-        "beat_level": beat_level,
-        "bass_level": bass_level,
-        "mid_level": mid_level,
-        "treble_level": treble_level,
-        "overall_energy": overall_energy,
-        "melody_level": melody_level,
-        "high_level": high_level,
-        "spectral_centroid": centroid,
-        "spectral_bandwidth": bandwidth,
-        "spectral_flux": flux,
-        "zero_crossing_rate": zcr,
-        "rms": rms_val,
-        "loudness": loudness,
-        "dynamic_range": dynamic_range,
-        "energy_change": energy_change,
-        "bass_ratio": bass_ratio,
-        "mid_ratio": mid_ratio,
-        "treble_ratio": treble_ratio,
-        "melody_ratio": melody_ratio,
-        "high_ratio": high_ratio,
-        "spectral_contrast": spectral_contrast,
-        "is_beat": is_beat,
-        "attack": attack,
-        "tempo_estimate": 0.0,
-        "is_silent": is_silent,
-    }
-
-    previous_segment_cache = audio_segment.copy()
-
-    return analysis
+def _is_beat(timestamp: float) -> bool:
+    """Check if any beat occurs in current analysis window"""
+    window_start = timestamp
+    window_end = timestamp + ANALYSIS_WINDOW
+    return any(window_start <= beat < window_end for beat in _audio_props["beats"])

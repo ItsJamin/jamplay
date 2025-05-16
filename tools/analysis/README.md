@@ -1,107 +1,70 @@
 # 🎧 Audio Analysis – Feature Description
 
-This documentation explains all features extracted by the `analyze_segment` function, along with their meaning and potential use in visualization.
+This documentation explains all features extracted by the `analyze_segment` function, along with their meaning and value range.
+
+## Important Notes:
+- audio data is normalized to values between -1.0 and +1.0 to erase differences between different .wav files
+- sample_rate/2 also known as Nyquist frequency is the highest frequency that can be encoded within a file with sample_rate. Therefore many of the features have something to do with sample_rate/2.
 
 ---
+
+## Global Features
+Global features are those that are calculated for the whole audio file once in the beginning.
+
+### `is_beat`
+`beats` are precalculated. `is_beat` is a boolean that states if a given segment has a beat in it. A beat is detected when a certain energy level is reached.
+
+Value-Range: True or False
+
+### `bpm`
+Beats per Minute is a way of measuring the tempo of a song. This implementation should not be taken as accurate but more like a direction for the overall speed of the song. It is based on the calculated `beats` but with a filter - intervals less than 0.3 are not considered individual beats as this would suggest a bpm of 200 or higher (not usual).
+
+Value-Range: 0 to 200
+Typical values: 50 to 150
+
+### `band_{freq_range}` (e.g. `band_bass`)
+A (weighted) float that describes how strong the frequency range is relative to the whole Song. 
+
+Value Range: -1.0 to +1.0 (could be higher but +-1 is 3 standard deviations from the mean)
+Typical values: -0.7 to +0.7
 
 ## Frequency-Based Features
 
-### `bass_level`
-- **Description**: Average energy in frequencies below 250 Hz.
-- **Usage**: Represents low-end energy (e.g., kick drums, bass lines); ideal for ground-shaking, pulsing visuals.
+### `spectral_centroid`
+The spectral centroid indicates where center of mass is in a spectrum. It gives a good impression of the brightness of a sound.
 
-### `mid_level`
-- **Description**: Average energy between 250 Hz and 1000 Hz.
-- **Usage**: Captures midrange frequencies (e.g., vocals, guitars); useful for expressive or organic visuals.
+Value-Range: 0hz to sample_rate/2hz
+Typical values: high hundreds to a few thousands
 
-### `treble_level`
-- **Description**: Average energy above 1000 Hz.
-- **Usage**: Highlights high-end content (e.g., hi-hats, snares); great for sparkling, delicate particles or sharp lines.
+### `normalized_magnitudes`
+Is an array of the magnitude of all frequencies *relative to the other frequency in that time point*.
+The dominant frequency is therefore 1. It is a good measure to see which frequencies are dominant but not for comparisons to other time points because of this relativeness.
 
-### `bass_ratio`, `mid_ratio`, `treble_ratio`
-- **Description**: Proportion of total energy found in each frequency range.
-- **Usage**: Enables balance-aware visual adjustments like color weighting or frequency-based layout.
-
-### `melody_energy`
-- **Description**: Energy within the 100–2000 Hz range.
-- **Usage**: Often includes melodic instruments – great for leading shapes or prominent layers.
-
-### `high_freq_energy`
-- **Description**: Energy in the high-frequency range (>2000 Hz).
-- **Usage**: Drives fine detail and brightness in visual effects.
-
----
+Value-Range: Array of length sample_rate/2 with values between 0 and 1.
 
 ## Time/Dynamics Features
 
 ### `rms`
-- **Description**: Root Mean Square – average signal energy.
-- **Usage**: Simple loudness metric – good for particle speed, size, or count.
+RMS or "Root Mean Square" is used to measure continuous power output of an audio signal.
+It gives the average energy in a timeframe and is a good indicator for perceived loudness, because it outliers are averaged with the rest.
 
-### `loudness`
-- **Description**: Decibel-based estimate of signal power (`20 * log10(rms)`).
-- **Usage**: More realistic loudness perception – helpful for scaling visuals intuitively.
-
-### `dynamic_range`
-- **Description**: Difference between max and min amplitude in the segment.
-- **Usage**: Indicates the "punchiness" or softness of the sound – useful for contrast in visuals.
-
-### `zero_crossing_rate` (ZCR)
-- **Description**: Rate of sign changes in the waveform.
-- **Usage**: High ZCR = noise or percussive content – great for glitchy or rough visual elements.
-
----
-
-## Spectral Features
-
-### `spectral_centroid`
-- **Description**: The “center of mass” of the frequency spectrum – higher = brighter sound.
-- **Usage**: Can modulate color temperature or position to reflect perceived brightness.
-
-### `spectral_bandwidth`
-- **Description**: Spread of the frequency spectrum.
-- **Usage**: Expresses the richness of sound – useful for adding spatial complexity.
-
-### `spectral_flux`
-- **Description**: Change in spectrum compared to the previous frame.
-- **Usage**: Detects transitions or movement in audio – great for bursts or switching animations.
-
-### `spectral_contrast`
-- **Description**: Standard deviation of the normalized FFT spectrum.
-- **Usage**: Indicates variation across frequencies – useful for visual "texture" or granularity.
-
----
-
-## Rhythm & Transient Features
-
-### `energy_change`
-- **Description**: Difference in overall energy from the previous frame.
-- **Usage**: Useful for creating reactive spikes or buildup effects.
-
-### `is_beat`
-- **Description**: True if spectral flux is significantly above recent average.
-- **Usage**: Beat detection – key for syncing visuals rhythmically.
-
-### `attack`
-- **Description**: Difference between flux and ZCR – measures transient sharpness.
-- **Usage**: Detects strong onset events – ideal for triggering snappy visual changes.
-
----
-
-## Meta Features
-
-### `overall_energy`
-- **Description**: Average energy across the FFT spectrum.
-- **Usage**: General measure of activity – good for controlling density, intensity, or motion.
-
-### `fft`
-- **Description**: Normalized, log-scaled FFT spectrum.
-- **Usage**: Base data for frequency visualizers like bars, shapes, or frequency grids.
-
-### `tempo_estimate`
-- **Description**: (Placeholder for future tempo detection)
-- **Usage**: Can eventually be used for BPM-based synchronization.
+Value-Range: -1.0 to +1.0
+Typical Values: 0.05 to 0.5
 
 ### `is_silent`
-- **Description**: True if RMS is below a certain threshold.
-- **Usage**: Useful for fading visuals or indicating pauses.
+Based on `rms` indicates if loudness is lower than a certain threshold.
+
+### `spectral_flux`
+The spectral flux measures how quickly the power changes.
+
+Value-Range: 0 to Infinity
+Typical Values: It is really depending on the music. Some music have hundreds as "normal amount of flux" and the thousands are only when the song is changing quickly. 
+
+
+## Other
+
+### `zero_crossing_rate`
+How often a single segment of data crosses the zero-line. It is generally a quick indicator for a pitch of a signal.
+
+Value-Range: 0 to 1
+Typical Values: 0.05 to 0.5
