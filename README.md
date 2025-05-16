@@ -17,7 +17,7 @@ What is suboptimal?
 - setup is not really portable because it needs wifi and an open port probably
 - website as the player is a little bit awkward and access-concept is needed so that not multiple people play music
 
-# Setup Your Own JamPlay
+# Setup JamPlay
 
 Coming soon...
 
