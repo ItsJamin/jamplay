@@ -31,7 +31,7 @@ EPSILON = 1e-9  # Small value to prevent division by zero
 
 # === GLOBAL STATE =============================================================
 _audio_buffer: Optional[np.ndarray] = None
-_sample_rate: int = 44100
+_sample_rate: int = None
 _audio_length: float = 0.0
 _audio_props: Dict = {
     "beats": [],
@@ -44,15 +44,16 @@ _global_calculated = False
 def set_audio(data: np.ndarray, sample_rate: int) -> None:
     """Initialize audio analysis system with normalized audio data"""
     global _audio_buffer, _sample_rate, _audio_length, _global_calculated
+
+    _sample_rate = sample_rate
+    _audio_length = len(data) / sample_rate
+    _global_calculated = False
     
     # Convert stereo to mono if needed
     if len(data.shape) == 2:
         data = data.mean(axis=1).astype(data.dtype)
     
     _audio_buffer = _normalize_audio(data)
-    _sample_rate = sample_rate
-    _audio_length = len(data) / sample_rate
-    _global_calculated = False
     
     _analyze_full_audio()
 

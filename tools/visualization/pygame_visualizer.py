@@ -1,7 +1,7 @@
 import pygame
 import time
 from tools.visualization import BaseVisualizer
-from tools.analysis import analyze_segment
+from tools.analysis import analyze_segment, set_audio
 from tools.mapping import BaseMapper, BasicFFTMapper
 import numpy as np
 
@@ -32,11 +32,10 @@ class PygameVisualizer(BaseVisualizer):
                     self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
 
             if self.song_name and self.song_playing and self.music_file is not None:
-                self.elapsed_time = time.time() - self.song_timestamp + self.song_pos
-                audio_segment = get_audio_segment(self.music_file, self.sample_rate, self.elapsed_time)
+                self.elapsed_time = time.time() - (self.song_timestamp) + self.song_pos
 
                 try:
-                    analysis = analyze_segment(audio_segment, self.sample_rate)
+                    analysis = analyze_segment(self.elapsed_time)
                     if self.mapper:
                         frame_array = self.mapper.map(analysis)  # -> RGB 2D array (height x width x 3)
                         surface = pygame.surfarray.make_surface(np.transpose(frame_array, (1, 0, 2)))

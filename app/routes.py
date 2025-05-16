@@ -6,13 +6,11 @@ import time
 import subprocess
 from threading import Thread, Lock
 
-from tools.visualization import BaseVisualizer
-
 bp = Blueprint('main', __name__)
 
 db = [os.path.splitext(f)[0] for f in os.listdir(Config.MUSIC_FOLDER) if f.endswith(Config.ALLOWED_EXTENSION)]
 
-vis = BaseVisualizer()#Config.VISUALIZER_CLASS(Config.WIDTH, Config.HEIGHT, Config.MAPPER_CLASS)
+vis = Config.VISUALIZER_CLASS(Config.WIDTH, Config.HEIGHT, Config.MAPPER_CLASS)
 vis.start()
 
 @bp.route('/')

@@ -14,15 +14,13 @@ class ScrollingMapper(BaseMapper):
         self.output[:, -1] = 0  # Clear new rightmost column
 
         height = self.height
-        x = self.width - 1  # Rightmost column
+        x = self.width - 10  # Rightmost column
 
         # === Feature Extraction ===
-        bass = analysis_data["bass_ratio"]
-        mid = analysis_data["mid_ratio"]
-        treble = analysis_data["treble_ratio"]
-        melody = analysis_data["melody_ratio"]
-        high = analysis_data["high_ratio"]
-        loudness = analysis_data["loudness"]
+        bass = analysis_data["band_bass"]
+        mid = analysis_data["band_mid"]
+        high = analysis_data["band_high_mid"]
+        loudness = analysis_data["rms"]
         spectral_centroid = analysis_data["spectral_centroid"]
         spectral_flux = analysis_data["spectral_flux"]
         is_beat = analysis_data["is_beat"]
@@ -30,25 +28,20 @@ class ScrollingMapper(BaseMapper):
         # === Map frequency levels to Y positions ===
 
         # Scale for y-positioning
-        bass_y = int((height-1) * (1.0 - bass))
-        mid_y = int((height-1) * (1.0 - mid))
-        melody_y = int((height-1) * (1.0 - melody))
-        treble_y = int((height-1) * (1.0 - treble))
-        high_y = int((height - 1) * (1.0 - high))
+        bass_y = int((1+bass)/2 * height)
+        mid_y = int((1+mid)/2 * height)
+        high_y = int((1+high)/2 * height)
 
         self.output[bass_y, x] = [0, 0, 200]
-        self.output[melody_y, x] = [000, 100, 200]
         self.output[mid_y, x] = [0, 200, 0]
-        self.output[treble_y, x] = [200, 100, 0]
         self.output[high_y, x] = [200, 0, 0]
 
         # === Beat detection: white vertical line ===
         if is_beat:
-            self.output[:, x] = [255, 255, 255]
+            self.output[:int(height/4), x] = [255, 255, 255]
 
         # === Loudness: Color bar from bottom based on spectral centroid ===
-        normalized_loudness = np.clip((loudness) / 100, 0, 1)
-        bar_height = int(normalized_loudness * (height // 2))  # max at half screen
+        bar_height = int(loudness * height)  # max at half screen
 
         # Color based on spectral centroid: low -> blue, high -> red
         centroid_color = int(np.clip(spectral_centroid / (10 * 2), 0, 255))
@@ -60,11 +53,18 @@ class ScrollingMapper(BaseMapper):
             self.output[height - bar_height:height, x] = color  # Gradient color
 
         # === Spectral Flux: Blue bar from bottom with 1/4 max height ===
-        normalized_flux = np.clip(spectral_flux / 10, 0, 1)  # Scale flux to fit the range
-        flux_height = int(normalized_flux * (height // 4))  # 1/4 max height
+        normalized_flux = np.log1p(spectral_flux)
+        flux_height = min(int(normalized_flux),(height // 4))  # 1/4 max height
 
         # Blue bar for spectral flux
         if flux_height > 0:
             self.output[height - flux_height: height, x] = [0, 255, 255]  # Blue
 
-        return self.output
+        vis_output = self.output.copy()
+
+        # Add highlight to indicate current
+        vis_output[:, x] = np.clip(vis_output[:, x] + 40, 0, 255)  # Brighten
+        vis_output[0, x] = [255, 255, 0]  # Yellow top
+        vis_output[-1, x] = [255, 255, 0]  # Yellow bottom
+
+        return vis_output
