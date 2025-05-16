@@ -45,6 +45,9 @@ It gives the average energy in a timeframe and is a good indicator for perceived
 Value-Range: -1.0 to +1.0
 Typical Values: 0.05 to 0.5
 
+### `is_silent`
+Based on `rms` indicates if loudness is lower than a certain threshold.
+
 ### `spectral_flux`
 The spectral flux measures how quickly the power changes.
 
@@ -56,6 +59,7 @@ Typical Values: It is really depending on the music. Some music have hundreds as
 
 ### `zero_crossing_rate`
 How often a single segment of data crosses the zero-line. It is generally a quick indicator for a pitch of a signal.
+
 
 Value-Range: 0 to 1
 Typical Values: 0.05 to 0.5

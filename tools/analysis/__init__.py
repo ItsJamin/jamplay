@@ -109,6 +109,9 @@ def is_beat(timestamp, window_duration=0.1):
             return True
     return False
 
+def is_silent(audio, threshold=0.005):
+    return compute_rms(audio) < threshold
+
 # === Main Analysis Entry Point ===
 
 def analyze_segment(timestamp, sample_rate):
@@ -125,7 +128,8 @@ def analyze_segment(timestamp, sample_rate):
         "normalized_magnitudes": normalized_magnitudes,
         "zero_crossing_rate": compute_zero_crossing_rate(segment),
         "is_beat": is_beat(timestamp, segment_duration),
-        "bpm": audio_props["bpm"]
+        "bpm": audio_props["bpm"],
+        "is_silent": is_silent(segment)
     }
 
     return analysis
