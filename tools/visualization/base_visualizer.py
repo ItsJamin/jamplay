@@ -84,7 +84,7 @@ class BaseVisualizer:
 
                 if self.music_file is not None:
                     # Perform Analysis at current tiemstamp
-                    analysis_data = analyze_segment(self.elapsed_time, self.sample_rate)
+                    analysis_data = analyze_segment(self.elapsed_time)
                     print("Current Analysis Data:")
                     for key, value in analysis_data.items():
                         print(f"{key}: {value}")

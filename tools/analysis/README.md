@@ -22,6 +22,12 @@ Beats per Minute is a way of measuring the tempo of a song. This implementation 
 Value-Range: 0 to 200
 Typical values: 50 to 150
 
+### `band_{freq_range}` (e.g. `band_bass`)
+A (weighted) float that describes how strong the frequency range is relative to the whole Song. 
+
+Value Range: -1.0 to +1.0 (could be higher but +-1 is 3 standard deviations from the mean)
+Typical values: -0.7 to +0.7
+
 ## Frequency-Based Features
 
 ### `spectral_centroid`
@@ -59,7 +65,6 @@ Typical Values: It is really depending on the music. Some music have hundreds as
 
 ### `zero_crossing_rate`
 How often a single segment of data crosses the zero-line. It is generally a quick indicator for a pitch of a signal.
-
 
 Value-Range: 0 to 1
 Typical Values: 0.05 to 0.5
