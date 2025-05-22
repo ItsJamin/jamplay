@@ -150,6 +150,7 @@ function selectSong() {
     $('#search-results').hide();
     $('#search-input').focus();
     $('#add-btn').prop('disabled', song === '');
+    addToQueue();
 }
 
 function handleSearchResults(songs) {
@@ -201,7 +202,8 @@ function handleKeyboardNavigation(event) {
 
 function addToQueue() {
     const input = $('#search-input').val().trim();
-    selectSong();
+    
+    console.log(input);
     if (!input) return;
     const isYoutube = isYoutubeUrl(input);
 
