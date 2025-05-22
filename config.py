@@ -7,8 +7,8 @@ class Config:
 
     MAPPER_CLASS = ScrollingMapper
     VISUALIZER_CLASS = PygameVisualizer
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1500
+    HEIGHT = 300
 
     # DOWNLOAD OPTIONS #
     MUSIC_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'music')

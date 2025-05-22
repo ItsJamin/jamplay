@@ -21,7 +21,8 @@ DEFAULT_FEATURES = {
     "spectral_centroid": 0.0,
     "normalized_magnitudes": np.array([]),
     "spectral_flux": 0.0,
-    **{band: 0.0 for band in SUBBAND_RANGES}
+    **{band: 0.0 for band in SUBBAND_RANGES},
+    "sample_rate": None
 }
 
 ANALYSIS_WINDOW = 0.1  # Seconds for analysis frames
@@ -199,7 +200,8 @@ def analyze_segment(timestamp: float) -> Dict:
     result.update({
         "rms": compute_rms(segment),
         "zero_crossing_rate": compute_zero_crossing_rate(segment),
-        "is_silent": is_silent(segment)
+        "is_silent": is_silent(segment),
+        "sample_rate": _sample_rate
     })
 
     # Frequency-domain features

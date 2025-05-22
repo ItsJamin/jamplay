@@ -5,7 +5,6 @@ from tools.mapping import BaseMapper
 class ScrollingMapper(BaseMapper):
     def __init__(self, width, height):
         super().__init__(width, height)
-        self.output = np.zeros((height, width, 3), dtype=np.uint8)
         self.scroll_x = 0
 
     def map(self, analysis_data):
