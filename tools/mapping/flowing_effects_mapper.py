@@ -21,7 +21,7 @@ class FlowingEffectsMapper(BaseMapper):
         flux = np.log1p(analysis_data["spectral_flux"])
         is_beat = analysis_data["is_beat"]
 
-        # === Save history ===
+        # === History
         self.history.append({
             "bass": bass,
             "mid": mid,
@@ -32,38 +32,51 @@ class FlowingEffectsMapper(BaseMapper):
 
         avg = lambda key: np.mean([h[key] for h in self.history])
 
-        # === Dynamic phase shift based on spectral centroid ===
+        # === Main wave phase (based on spectral centroid)
         wave_speed = 0.2 + avg("centroid") / 5000.0
         self.phase += wave_speed
+
+        # === Beat phase (moves backwards on each beat)
+        if not hasattr(self, "beat_phase"):
+            self.beat_phase = 0.0
+        if not hasattr(self, "beat_decay"):
+            self.beat_decay = 0.0
+
+        # Trigger counter-wave on beat
+        if is_beat:
+            self.beat_decay = 1.0  # full strength
+        else:
+            self.beat_decay *= 0.9  # decay over time
+
+        self.beat_phase -= 0.6 * self.beat_decay  # backward movement
 
         for x in range(width):
             pos = x / width
 
-            # === Sinus wave for movement across the strip ===
-            wave = 0.5 + 0.5 * np.sin(2 * np.pi * pos + self.phase)
+            # === Main wave (rightward)
+            main_wave = 0.5 + 0.5 * np.sin(2 * np.pi * pos + self.phase)
 
-            # === Base color from feature blend (R=high, G=mid, B=bass) ===
+            # === Beat wave (leftward)
+            beat_wave = 0.5 + 0.5 * np.sin(2 * np.pi * pos + self.beat_phase)
+
+            # === Blend both waves
+            wave = main_wave * (1.0 - self.beat_decay) + beat_wave * self.beat_decay
+
+            # === Audio-based RGB
             r = int(np.clip((avg("high") + wave) * 128, 0, 255))
             g = int(np.clip((avg("mid") + wave) * 128, 0, 255))
             b = int(np.clip((avg("bass") + wave) * 128, 0, 255))
 
-            # === Brightness scaling from loudness ===
-            raw_loudness = avg("loudness")
-            # Apply nonlinear scaling: more sensitive to quiet sounds
-            brightness = np.clip((raw_loudness * 3) ** 0.7, 0.05, 1.0)
+            # === Brightness
+            brightness = np.clip((avg("loudness") * 3) ** 0.7, 0.05, 1.0)
             color = np.array([r, g, b]) * brightness
 
-            # === Flux-driven jitter for more motion ===
+            # === Flux jitter
             flux_jitter = int(min(flux * 10, 5))
             jitter = np.random.randint(-flux_jitter, flux_jitter + 1)
             j_x = np.clip(x + jitter, 0, width - 1)
 
             output[0, j_x] = np.clip(color, 0, 255)
-
-        # === Beat flash (white pulse across the whole strip) ===
-        if is_beat and False:
-            strength = int(255 * avg("loudness"))
-            output[0, :] = np.clip(output[0, :] + [strength] * 3, 0, 255)
 
         self.output = output
         return self.output.copy()
