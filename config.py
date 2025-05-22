@@ -5,10 +5,10 @@ from tools.visualization import *
 class Config:
     # VISUALIZER OPTIONS #
 
-    MAPPER_CLASS = ScrollingMapper
+    MAPPER_CLASS = FlowingEffectsMapper
     VISUALIZER_CLASS = PygameVisualizer
-    WIDTH = 1500
-    HEIGHT = 300
+    WIDTH = 150
+    HEIGHT = 1
 
     # DOWNLOAD OPTIONS #
     MUSIC_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'music')
