@@ -2,6 +2,11 @@ import numpy as np
 from tools.mapping import BaseMapper
 from collections import deque
 
+# ---
+# TODOS/IDEAS:
+# - when to silent make it stationary
+# - mood more influence
+# ---
 class FlowingEffectsMapper(BaseMapper):
     def __init__(self, width, height=1, history_length=10):
         super().__init__(width, height)
@@ -71,6 +76,13 @@ class FlowingEffectsMapper(BaseMapper):
             brightness = np.clip((avg("loudness") * 3) ** 0.7, 0.05, 1.0)
             color = np.array([r, g, b]) * brightness
 
+            if analysis_data["bpm"]:
+                bpm_color = bpm_to_color(analysis_data["bpm"])  # float RGB
+                # Am Ende bei der Farbmischung:
+                color = color / 255.0
+                color *= bpm_color  # modulate by BPM color
+                color = (color * 255).astype(np.uint8)
+
             # === Flux jitter
             flux_jitter = int(min(flux * 10, 5))
             jitter = np.random.randint(-flux_jitter, flux_jitter + 1)
@@ -78,5 +90,23 @@ class FlowingEffectsMapper(BaseMapper):
 
             output[0, j_x] = np.clip(color, 0, 255)
 
+        #if is_beat:
+        #    strength = int(50 * avg("loudness"))
+        #    output[0, :] = np.clip(output[0, :] + [strength], 0, 255)
+        # linear mixing
+        # output = (0.4 * self.output + 0.6 * output).astype(np.uint8)
+
         self.output = output
         return self.output.copy()
+
+def bpm_to_color(bpm):
+    # Normalize BPM (assume typical range 60–180)
+    bpm_norm = np.clip((bpm - 60) / (180 - 60), 0, 1)
+
+    # Map to hue (0.0–0.9 → red → violet)
+    hue = bpm_norm * 0.9
+
+    # Convert to RGB (HSV to RGB)
+    import colorsys
+    r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
+    return np.array([r, g, b])  # float RGB 0–1
