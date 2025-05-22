@@ -31,7 +31,7 @@ class BaseVisualizer:
             
             set_audio(self.music_file, self.sample_rate)
             if self.mapper:
-                self.mapper.__init__(self.width, self.height)
+                self.mapper.__init__(self.mapper.width, self.mapper.height)
         except:
             self.music_file = None
         
