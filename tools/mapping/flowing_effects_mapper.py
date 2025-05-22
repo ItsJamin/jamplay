@@ -48,7 +48,9 @@ class FlowingEffectsMapper(BaseMapper):
             b = int(np.clip((avg("bass") + wave) * 128, 0, 255))
 
             # === Brightness scaling from loudness ===
-            brightness = avg("loudness")
+            raw_loudness = avg("loudness")
+            # Apply nonlinear scaling: more sensitive to quiet sounds
+            brightness = np.clip((raw_loudness * 3) ** 0.7, 0.05, 1.0)
             color = np.array([r, g, b]) * brightness
 
             # === Flux-driven jitter for more motion ===
@@ -59,7 +61,7 @@ class FlowingEffectsMapper(BaseMapper):
             output[0, j_x] = np.clip(color, 0, 255)
 
         # === Beat flash (white pulse across the whole strip) ===
-        if is_beat:
+        if is_beat and False:
             strength = int(255 * avg("loudness"))
             output[0, :] = np.clip(output[0, :] + [strength] * 3, 0, 255)
 
