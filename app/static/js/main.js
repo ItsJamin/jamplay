@@ -258,6 +258,10 @@ function resetButtonState() {
 
 /* ----- Queue Management ----- */
 
+/* ----- Queue Management ----- */
+
+/* ----- Queue Management ----- */
+
 function updateQueue() {
     const queueList = $('#queue-list');
     const focusedIndex = queueList.find('.list-group-item:focus').index(); 
@@ -268,32 +272,79 @@ function updateQueue() {
             <div class="list-group-item draggable" 
                  tabindex="0"
                  data-index="${index}"
+                 draggable="true"
                  aria-label="${song}, ${index + 1}">
                 <span class="song-name">${song}</span>
                 <i class="bi bi-trash delete-song"></i>
             </div>
         `);
 
-        item.hover(
-            function () { $(this).find('.delete-song').fadeIn(150); },
-            function () { $(this).find('.delete-song').fadeOut(150); }
-        );
+        // Show delete button on hover (desktop) or always on mobile
+        if ('ontouchstart' in window) {
+            item.find('.delete-song').show();
+        } else {
+            item.hover(
+                function() { $(this).find('.delete-song').fadeIn(150); },
+                function() { $(this).find('.delete-song').fadeOut(150); }
+            );
+        }
 
-        item.find('.delete-song').on('click', () => {
+        // Delete button functionality
+        item.find('.delete-song').on('click', function(e) {
+            e.stopPropagation();
             queue.splice(index, 1);
             updateQueue();
         });
 
-        // Keyboard-Controls
-        item.on('keydown', function (event) {
-            const focusedIndex = item.index();
+        // Song name click/tap functionality
+        item.find('.song-name').on('click', function() {
+            const movedItem = queue.splice(index, 1)[0];
+            queue.splice(0, 0, movedItem);
+            skipTrack();
+            updateQueue();
+        });
+
+        // Drag & Drop events
+        item[0].addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', index.toString());
+            setTimeout(() => item.addClass('dragging'), 0);
+        });
+
+        item[0].addEventListener('dragend', () => {
+            item.removeClass('dragging');
+            updateQueue();
+        });
+
+        item[0].addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!item.hasClass('dragover')) {
+                item.addClass('dragover');
+                setTimeout(() => item.removeClass('dragover'), 100);
+            }
+        });
+
+        item[0].addEventListener('drop', (e) => {
+            e.preventDefault();
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const toIndex = index;
+            
+            if (fromIndex !== toIndex) {
+                const [movedItem] = queue.splice(fromIndex, 1);
+                queue.splice(toIndex, 0, movedItem);
+                updateQueue();
+            }
+        });
+
+        // Keyboard navigation
+        item.on('keydown', function(event) {
+            const focusedIndex = $(this).index();
 
             if (event.ctrlKey) {
                 if (event.key === 'ArrowUp') {
                     if (focusedIndex > 0) {
                         const movedItem = queue.splice(focusedIndex, 1)[0];
                         queue.splice(focusedIndex - 1, 0, movedItem);
-                        item.prev().focus();
+                        $(this).prev().focus();
                         updateQueue();
                     }
                     event.preventDefault();
@@ -301,22 +352,22 @@ function updateQueue() {
                     if (focusedIndex < queue.length - 1) {
                         const movedItem = queue.splice(focusedIndex, 1)[0];
                         queue.splice(focusedIndex + 1, 0, movedItem);
-                        item.next().focus();
+                        $(this).next().focus();
                         updateQueue();
                     }
                     event.preventDefault();
                 }
-            } else if (event.key == 'ArrowUp') {
-                item.prev().focus();
+            } else if (event.key === 'ArrowUp') {
+                $(this).prev().focus();
                 event.preventDefault();
-            } else if (event.key == 'ArrowDown') {
-                item.next().focus();
+            } else if (event.key === 'ArrowDown') {
+                $(this).next().focus();
                 event.preventDefault();
             } else if (event.key === 'Delete' || event.key === 'Backspace') {
                 queue.splice(focusedIndex, 1);
                 updateQueue();
                 event.preventDefault();
-            } else if (event.key === 'Space' || event.key === 'Enter') {
+            } else if (event.key === ' ' || event.key === 'Enter') {
                 const movedItem = queue.splice(focusedIndex, 1)[0];
                 queue.splice(0, 0, movedItem);
                 skipTrack();
@@ -332,29 +383,6 @@ function updateQueue() {
     if (focusedIndex >= 0) {
         queueList.find('.list-group-item').eq(focusedIndex).focus();
     }
-
-    new Sortable(queueList[0], {
-        animation: 200,
-        ghostClass: 'dragging',
-        onStart: function (evt) {
-            evt.from.querySelectorAll('.list-group-item').forEach(item => {
-                item.setAttribute('tabindex', '-1');
-            });
-        },
-        onEnd: function (evt) {
-            evt.from.querySelectorAll('.list-group-item').forEach(item => {
-                item.setAttribute('tabindex', '0');
-            });
-            const oldIndex = evt.oldIndex;
-            const newIndex = evt.newIndex;
-
-            if (oldIndex !== newIndex) {
-                const movedItem = queue.splice(oldIndex, 1)[0];
-                queue.splice(newIndex, 0, movedItem);
-                updateQueue();
-            }
-        }
-    });
 }
 
 /* ----- Progress Bar Functions ----- */
@@ -451,5 +479,29 @@ function getCurrentData() {
             }
             updateProgressBar();
         }
+    });
+}
+
+/* Mobile Responsiveness */ 
+function enableTouchClickFallback(selector, handler) {
+    let touchMoved = false;
+
+    $(document).on('touchstart', selector, function() {
+        touchMoved = false;
+    });
+
+    $(document).on('touchmove', selector, function() {
+        touchMoved = true;
+    });
+
+    $(document).on('touchend', selector, function(e) {
+        if (!touchMoved) {
+            e.preventDefault();
+            handler.call(this, e);
+        }
+    });
+
+    $(document).on('click', selector, function(e) {
+        handler.call(this, e);
     });
 }
