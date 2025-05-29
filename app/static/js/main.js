@@ -297,12 +297,14 @@ function updateQueue() {
         });
 
         // Song name click/tap functionality
-        item.find('.song-name').on('click', function() {
-            const movedItem = queue.splice(index, 1)[0];
-            queue.splice(0, 0, movedItem);
-            skipTrack();
-            updateQueue();
-        });
+        if (!'ontouchstart' in window) {
+            item.find('.song-name').on('click', function() {
+                const movedItem = queue.splice(index, 1)[0];
+                queue.splice(0, 0, movedItem);
+                skipTrack();
+                updateQueue();
+            });
+        }
 
         // Drag & Drop events
         item[0].addEventListener('dragstart', (e) => {
