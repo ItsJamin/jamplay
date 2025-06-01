@@ -76,7 +76,7 @@ class FlowingEffectsMapper(BaseMapper):
             brightness = np.clip((avg("loudness") * 3) ** 0.7, 0.05, 1.0)
             color = np.array([r, g, b]) * brightness
 
-            if analysis_data["bpm"]:
+            if analysis_data["bpm"] != 0 and False:
                 bpm_color = bpm_to_color(analysis_data["bpm"])  # float RGB
                 # Am Ende bei der Farbmischung:
                 color = color / 255.0

@@ -6,7 +6,7 @@ class Config:
     # VISUALIZER OPTIONS #
 
     MAPPER_CLASS = FlowingEffectsMapper
-    VISUALIZER_CLASS = PygameVisualizer
+    VISUALIZER_CLASS = LEDVisualizer
     WIDTH = 150
     HEIGHT = 1
 
@@ -22,5 +22,6 @@ class Config:
             'preferredquality': '192',
         }],
         'outtmpl': 'music/___temp.%(ext)s',
+        'cookies': 'cookies.txt'
     }
     FORBIDDEN_CHARS_IN_NAME = ["~", "“", "#", "%", "&", "*" ,":", "<", ">" ,"?", "/", "\\", "{", "|", "}"]
