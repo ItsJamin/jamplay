@@ -1,6 +1,9 @@
 # JamPlay 0.0.1
 
-JamPlay is intended to be a framework for playing music while visualizing the music. The basic idea is that playing the music and visualizing the music is seperated from another (several reasons one of them being linux).
+JamPlay is intended to be a framework for playing music while visualizing the music. The basic idea is that playing the music and visualizing the music is seperated from another (several reasons one of them being linux). The user has full control of the music and with what device it is played while the server manages the downloading, listing and, if wanted, visualizing of the music.
+
+![image](https://github.com/user-attachments/assets/17d94325-cb4d-4a23-9a5b-3f1ad98db1d4)
+
 
 ## Example, Pros and Cons
 The user opens the website on their smartphone and starts playing a song. The backend, in this example a RaspberryPi, analyses the music and visualizes it with an LED-Strip.
