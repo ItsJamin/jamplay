@@ -19,7 +19,33 @@ What is suboptimal?
 
 # Setup JamPlay
 
-Coming soon...
+1. Clone the repository `git clone https://github.com/ItsJamin/jamplay.git`
+
+2. Create and activate a virtual environment und install the packages in it.
+```
+cd jamplay
+python -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+If you also want to use the LED Visualization, you have to install these (only tested for Raspberry Pi 4):
+```
+pip3 install rpi_ws281x
+pip3 install adafruit-circuitpython-neopixel
+python3 -m pip install --force-reinstall adafruit-blinka
+```
+
+3. Configurate your program
+In the `config.py` you can set up variables such as which visualizer to use or yt-dlp Options.
+NOTE: If you are using the LED Visualizer, the GPIO PIN is not configured in the `config.py` but in the `led_visualizer.py`.
+
+4. Local Network Access
+If you want to access this player from your local network, you have to open the port for the firewall on your local server. You can use the `open_port.sh` for this as follows:
+`chmod +x open_port.sh`
+`./open_port.sh`
+
+Now you can get your local ip-address with the `ipconfig` command such and connect to it which looks something like this `192.168.172.XX:5050`.
 
 # Components
 

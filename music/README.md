@@ -1,0 +1,1 @@
+This is the library where the songs are saved. The whole structure of the project is layed out for .wav files, because they are easier to read.
