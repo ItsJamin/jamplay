@@ -6,7 +6,7 @@ class Config:
     # VISUALIZER OPTIONS #
 
     MAPPER_CLASS = FlowingEffectsMapper
-    VISUALIZER_CLASS = LEDVisualizer
+    VISUALIZER_CLASS = PygameVisualizer
     WIDTH = 150
     HEIGHT = 1
 

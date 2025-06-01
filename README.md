@@ -14,8 +14,7 @@ What are the benefits?
 
 What is suboptimal?
 - minor latencies in synchronisation (should not be an issue in the end)
-- setup is not really portable because it needs wifi and an open port probably
-- website as the player is a little bit awkward and access-concept is needed so that not multiple people play music
+- Website as the player is a little bit awkward and access-concept is needed so that not multiple people play music, because website is not suited for synchronisation of multiple users.
 
 # Setup JamPlay
 
@@ -60,13 +59,12 @@ The backend is also responsible for keeping the visualizer on the BackEnd Device
 The visualizer should visualize the music. There are three main steps to this:
 - Analyze: Analyses the music and gives back the features
 - Mapper: How the features are *presented* ("What should be on the canvas?"), e.g. beats should make the screen red.
-- Visualizer: How the features are *displayed* ("What should be the canvas?"), e.g. visualizing through a pygame window or visualizing through an external LED-strip.
+- Visualizer: How the features are *displayed* ("What is the canvas?"), e.g. visualizing through a pygame window or visualizing through an external LED-strip.
 
 ## Planned
 
-- More features from analysis
-- A good mapper that is not just a one-trick-pony and actually creates interesting visualizations from the features
-- LEDVisualizer with neopixel probably
+- A good mapper that is not just a one-trick-pony and actually creates interesting visualizations from the features.
 - Website improvements:
     - only one user at the time as a player (the other one can maybe queue or suggest songs)
     - when searching for a song enter should directly add to queue
+- more features would be nice

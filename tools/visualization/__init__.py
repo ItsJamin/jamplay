@@ -1,3 +1,7 @@
 from .base_visualizer import BaseVisualizer
 from .pygame_visualizer import PygameVisualizer
-from .led_visualizer import LEDVisualizer
+
+try:
+    from .led_visualizer import LEDVisualizer
+except:
+    print("NeoPixel not installed. This is only an error if you want to use the LEDVisualizer")
